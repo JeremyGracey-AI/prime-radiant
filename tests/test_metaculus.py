@@ -20,19 +20,24 @@ def test_parse_binary_question_maps_core_fields() -> None:
 
     question = parse_binary_question(raw)
 
-    assert question.post_id == 38195
-    assert question.question_id == 37642
+    assert question.post_id == 45207
+    assert question.question_id == 45402
     assert question.title == (
-        "Will SpaceX's Starship complete a successful orbital flight before 2027?"
+        "Will a fault-tolerant quantum computer be available to commercial users"
+        " before January 1, 2030?"
     )
-    assert question.page_url == "https://www.metaculus.com/questions/38195"
+    assert question.page_url == "https://www.metaculus.com/questions/45207"
     assert question.state == "open"
     assert question.background is not None
-    assert question.background.startswith("SpaceX has been developing")
+    assert question.background.startswith(
+        "*This forecasting question is associated with the Verity"
+    )
     assert question.resolution_criteria is not None
-    assert question.resolution_criteria.startswith("This question resolves Yes")
-    assert question.open_time == datetime(2026, 1, 16, 12, 0, tzinfo=UTC)
-    assert question.close_time == datetime(2026, 12, 31, 23, 0, tzinfo=UTC)
+    assert question.resolution_criteria.startswith(
+        "The question will resolve as **Yes**"
+    )
+    assert question.open_time == datetime(2026, 8, 19, 1, 10, tzinfo=UTC)
+    assert question.close_time == datetime(2030, 1, 1, 0, 59, tzinfo=UTC)
 
 
 def test_parse_rejects_non_binary_question() -> None:

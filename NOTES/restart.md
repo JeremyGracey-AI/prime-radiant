@@ -16,20 +16,19 @@ validated by Ruff + Pyright + pytest.
 - done: `config.py` (cost caps: per-question $0.25, per-run $2.50), `metaculus.py`
   (pure `parse_binary_question` + thin async-wrapped fetch via forecasting-tools)
 - done: 4 tests green against recorded-shape fixture; Ruff + Pyright clean
-- done: fetch call path executed once and verified to the auth boundary — fails with
-  `ValueError: METACULUS_TOKEN ... not set`, i.e. filter construction, kwargs, and
-  asyncio wrapping all run (2026-08-30)
-- NOT done: full live fetch of 5 open questions — **no METACULUS_TOKEN on this machine**
-  (checked `~/.zsh_secrets`); Metaculus API 403s unauthenticated reads (verified
-  2026-08-30). Jeremy: create a token at metaculus.com and add to `.env`.
+- done: live smoke fetch — 5 real open binary questions fetched and parsed end-to-end
+  with Jeremy's METACULUS_TOKEN (2026-08-30 PM)
+- done: `tests/fixtures/posts_response.json` re-recorded from live API responses
+  (binary post 45207 + a real multiple_choice post; account-specific `my_forecasts`
+  redacted). Tests updated to recorded values; all green.
+- Phase A fully done: `uv run ruff check . && uv run pyright && uv run pytest` all clean.
 
 ## Next step
 
-Jeremy adds `METACULUS_TOKEN` to `.env`; run the live smoke fetch
-(`uv run python -c "from prime_radiant.metaculus import fetch_open_binary_questions; print(fetch_open_binary_questions(5))"`),
-re-record `tests/fixtures/posts_response.json` from a real response (fixture is
-currently hand-built from forecasting-tools' parser — re-recording catches schema
-drift), then start Phase B (retrieval + date-filter leakage test).
+Start Phase B (retrieval): query generation + date-filtered news fetch + relevance
+filter, with an explicit leakage unit test (post-cutoff article must be rejected).
+First task: verify whether tournament enrollment provides AskNews credentials; else
+get a free Serper key (serper.dev) for `NEWS_API_KEY`.
 
 ## Verify
 
@@ -37,8 +36,11 @@ drift), then start Phase B (retrieval + date-filter leakage test).
 
 ## Blockers
 
-- METACULUS_TOKEN absent → live fetch untested (unit tests don't need it).
-- News API decision deferred to Phase B: AskNews if tournament-provided, else Serper/NewsAPI.
+- None for Phase A.
+- News API decision deferred to Phase B: AskNews if tournament-provided, else Serper/NewsAPI
+  (`NEWS_API_KEY` in `.env` is intentionally empty until then).
+- forecasting-tools does NOT auto-load `.env`: callers must run python-dotenv's
+  `load_dotenv()` first (the Phase C run module should own this).
 
 ## Notes / gaps (per house rules: state the gap)
 
