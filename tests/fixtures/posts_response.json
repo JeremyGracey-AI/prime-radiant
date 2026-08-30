@@ -1,0 +1,120 @@
+{
+  "count": 2,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 38195,
+      "title": "Will SpaceX's Starship complete a successful orbital flight before 2027?",
+      "slug": "starship-orbital-flight-before-2027",
+      "author_id": 101234,
+      "author_username": "example_author",
+      "published_at": "2026-01-15T12:00:00Z",
+      "open_time": "2026-01-16T12:00:00Z",
+      "scheduled_close_time": "2026-12-31T23:00:00Z",
+      "scheduled_resolve_time": "2027-01-07T23:00:00Z",
+      "nr_forecasters": 412,
+      "forecasts_count": 1893,
+      "status": "open",
+      "projects": {
+        "tournament": [
+          {
+            "id": 32828,
+            "slug": "aibq1",
+            "name": "AI Benchmark Tournament Q1"
+          }
+        ],
+        "default_project": {
+          "id": 32828,
+          "type": "tournament",
+          "visibility": "normal"
+        }
+      },
+      "question": {
+        "id": 37642,
+        "title": "Will SpaceX's Starship complete a successful orbital flight before 2027?",
+        "description": "SpaceX has been developing Starship as a fully reusable launch system. Several integrated flight tests have been conducted with varying degrees of success.",
+        "resolution_criteria": "This question resolves Yes if, before January 1, 2027 (UTC), a SpaceX Starship vehicle completes at least one full orbit of Earth and is officially confirmed by SpaceX or credible media reporting.",
+        "fine_print": "Suborbital or partial-orbit flights do not count. Resolution is based on official SpaceX statements or at least two credible media reports.",
+        "type": "binary",
+        "status": "open",
+        "possibilities": null,
+        "resolution": null,
+        "open_time": "2026-01-16T12:00:00Z",
+        "scheduled_close_time": "2026-12-31T23:00:00Z",
+        "scheduled_resolve_time": "2027-01-07T23:00:00Z",
+        "actual_resolve_time": null,
+        "cp_reveal_time": "2026-01-19T12:00:00Z",
+        "question_weight": 1.0,
+        "include_bots_in_aggregates": true,
+        "label": "",
+        "unit": "",
+        "my_forecasts": {
+          "latest": null,
+          "history": []
+        },
+        "aggregations": {
+          "recency_weighted": {
+            "latest": {
+              "centers": [0.62],
+              "means": [0.61]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 38200,
+      "title": "Which company will have the most capable frontier model on 2026-12-31?",
+      "slug": "most-capable-frontier-model-2026",
+      "author_id": 101234,
+      "author_username": "example_author",
+      "published_at": "2026-02-01T12:00:00Z",
+      "open_time": "2026-02-02T12:00:00Z",
+      "scheduled_close_time": "2026-12-30T23:00:00Z",
+      "scheduled_resolve_time": "2027-01-05T23:00:00Z",
+      "nr_forecasters": 250,
+      "forecasts_count": 940,
+      "status": "open",
+      "projects": {
+        "tournament": [
+          {
+            "id": 32828,
+            "slug": "aibq1",
+            "name": "AI Benchmark Tournament Q1"
+          }
+        ],
+        "default_project": {
+          "id": 32828,
+          "type": "tournament",
+          "visibility": "normal"
+        }
+      },
+      "question": {
+        "id": 37650,
+        "title": "Which company will have the most capable frontier model on 2026-12-31?",
+        "description": "Frontier model capability as judged by a weighted average of major public benchmarks.",
+        "resolution_criteria": "Resolves to the company at the top of the reference leaderboard on 2026-12-31.",
+        "fine_print": "",
+        "type": "multiple_choice",
+        "status": "open",
+        "options": ["Anthropic", "OpenAI", "Google", "Other"],
+        "resolution": null,
+        "open_time": "2026-02-02T12:00:00Z",
+        "scheduled_close_time": "2026-12-30T23:00:00Z",
+        "scheduled_resolve_time": "2027-01-05T23:00:00Z",
+        "actual_resolve_time": null,
+        "cp_reveal_time": "2026-02-05T12:00:00Z",
+        "question_weight": 1.0,
+        "include_bots_in_aggregates": true,
+        "label": "",
+        "unit": "",
+        "my_forecasts": {
+          "latest": null,
+          "history": []
+        },
+        "aggregations": {}
+      }
+    }
+  ]
+}

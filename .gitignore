@@ -1,0 +1,18 @@
+# Secrets — never commit
+.env
+
+# Data and run artifacts
+data/
+*.duckdb
+logs/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+dist/
+
+# OS
+.DS_Store

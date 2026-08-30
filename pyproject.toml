@@ -1,0 +1,37 @@
+[project]
+name = "prime-radiant"
+version = "0.1.0"
+description = "Calibrated LLM forecasting bot for Metaculus binary questions"
+readme = "README.md"
+authors = [
+    { name = "Jeremy Gracey", email = "jeremy.a.gracey@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "forecasting-tools>=0.2.92",
+    "pydantic>=2.13.5",
+    "pydantic-settings>=2.15.0",
+    "python-dotenv>=1.2.3",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.411",
+    "pytest>=9.1.1",
+    "ruff>=0.16.5",
+]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[tool.pyright]
+include = ["src", "tests"]
+venvPath = "."
+venv = ".venv"
