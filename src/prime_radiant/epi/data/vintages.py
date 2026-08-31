@@ -12,7 +12,7 @@ are cached as parquet by commit sha (a sha's content never changes).
 import io
 import subprocess
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -40,6 +40,9 @@ def resolve_vintage(repo: Path, as_of_date: date, target_file: str = TARGET_FILE
             "rev-list",
             "-1",
             f"--before={before}",
+            # first-parent = what a main-branch watcher could see on that date;
+            # without it, PR-branch commits surface before their merge landed.
+            "--first-parent",
             "--format=%H %cI",
             "--no-commit-header",
             "HEAD",
@@ -54,7 +57,11 @@ def resolve_vintage(repo: Path, as_of_date: date, target_file: str = TARGET_FILE
     if not line:
         raise VintageNotFoundError(f"no vintage of {target_file} at or before {as_of_date}")
     sha, committed_at = line.split(" ", 1)
-    return Vintage(sha=sha, committed_at=datetime.fromisoformat(committed_at))
+    # Normalize to UTC: a positive-offset stamp (e.g. +10:00) can carry a LOCAL
+    # calendar date after the as-of date even though the instant is within it,
+    # which would break `committed_at.date() <= as_of_date` for consumers.
+    committed_utc = datetime.fromisoformat(committed_at).astimezone(UTC)
+    return Vintage(sha=sha, committed_at=committed_utc)
 
 
 def as_of(
@@ -64,9 +71,12 @@ def as_of(
     target_file: str = TARGET_FILE,
 ) -> pd.DataFrame:
     vintage = resolve_vintage(repo, as_of_date, target_file)
+    # Key on (sha, file): real hub commits touch several target-data files at
+    # once, and a sha-only key silently serves one file's frame for another.
+    cache_name = f"{vintage.sha}--{Path(target_file).stem}.parquet"
 
     if cache_dir is not None:
-        cache_path = cache_dir / f"{vintage.sha}.parquet"
+        cache_path = cache_dir / cache_name
         if cache_path.exists():
             return pd.read_parquet(cache_path)
 
@@ -80,7 +90,7 @@ def as_of(
 
     if cache_dir is not None:
         cache_dir.mkdir(parents=True, exist_ok=True)
-        frame.to_parquet(cache_dir / f"{vintage.sha}.parquet")
+        frame.to_parquet(cache_dir / cache_name)
     return frame
 
 

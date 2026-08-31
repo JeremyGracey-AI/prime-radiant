@@ -7,6 +7,7 @@ import pandera.errors
 import pytest
 
 from prime_radiant.epi.schemas import (
+    HUB_LOCATIONS,
     QUANTILE_LEVELS,
     FeatureSchema,
     RawTargetSchema,
@@ -44,6 +45,20 @@ def _submission_frame() -> pd.DataFrame:
             }
         )
     return pd.DataFrame(rows)
+
+
+class TestHubLocations:
+    def test_constant_matches_recorded_hub_fixture(self) -> None:
+        # Cross-verification: the hardcoded constant must equal the recorded
+        # auxiliary-data/locations.csv (fetched from the hub 2026-08-30).
+        import csv
+        from pathlib import Path
+
+        fixture = Path(__file__).parent.parent / "fixtures" / "locations.csv"
+        with fixture.open() as f:
+            codes = {row["location"] for row in csv.DictReader(f)}
+        assert set(HUB_LOCATIONS) == codes
+        assert len(HUB_LOCATIONS) == 53
 
 
 class TestQuantileLevels:
@@ -113,6 +128,49 @@ class TestSubmissionSchema:
 
     def test_rejects_bad_horizon(self) -> None:
         bad = _submission_frame().assign(horizon=7)
+        with pytest.raises(pandera.errors.SchemaError):
+            SubmissionSchema.validate(bad)
+
+    def test_rejects_non_hub_locations(self) -> None:
+        # tasks.json enumerates exactly 53 locations; a regex is not enough —
+        # gap FIPS ("03"), excluded territories ("60"), and nonsense ("99")
+        # must all fail. Demonstrated over-permissive by adversarial review.
+        for bad_code in ("03", "60", "99"):
+            bad = _submission_frame().assign(location=bad_code)
+            with pytest.raises(pandera.errors.SchemaError):
+                SubmissionSchema.validate(bad)
+
+    def test_rejects_incomplete_quantile_set(self) -> None:
+        # All 23 levels are `required` in tasks.json — a partial frame is not
+        # a valid submission unit.
+        bad = _submission_frame().head(5)
+        with pytest.raises(pandera.errors.SchemaError):
+            SubmissionSchema.validate(bad)
+
+    def test_rejects_duplicate_quantile_level(self) -> None:
+        frame = _submission_frame()
+        bad = pd.concat([frame, frame.head(1)], ignore_index=True)
+        with pytest.raises(pandera.errors.SchemaError):
+            SubmissionSchema.validate(bad)
+
+    def test_rejects_targets_not_yet_shipped(self) -> None:
+        # Phase A ships the primary target only; rate change is pmf-only in the
+        # hub and would be hub-invalid as quantile rows anyway.
+        bad = _submission_frame().assign(target="wk flu hosp rate change")
+        with pytest.raises(pandera.errors.SchemaError):
+            SubmissionSchema.validate(bad)
+
+    def test_rejects_broken_date_arithmetic(self) -> None:
+        # Hub rule: target_end_date == reference_date + 7*horizon days.
+        bad = _submission_frame().assign(target_end_date=date(2026, 1, 17))  # +14 for horizon 1
+        with pytest.raises(pandera.errors.SchemaError):
+            SubmissionSchema.validate(bad)
+
+    def test_rejects_non_saturday_reference_date(self) -> None:
+        bad = _submission_frame().assign(
+            reference_date=date(2026, 1, 6),  # a Tuesday
+            target_end_date=date(2026, 1, 13),  # keeps +7*horizon consistent
+        )
         with pytest.raises(pandera.errors.SchemaError):
             SubmissionSchema.validate(bad)
 
