@@ -32,11 +32,30 @@ vintage data.
   official files carry a SECOND quantile target (prop ed visits) that doubled task
   groups; the adversarially-rebuilt WIS validation caught it as duplicate levels.
 - 146 offline tests (cov 95.58%) + 6 integration green.
-- NOT yet run: Phase C adversarial verification workflow (next before declaring done).
+- done: adversarial verification (4 agents). Gate numbers reproduced to 4dp by an
+  INDEPENDENT from-scratch scorer; task sets exact (full grid both sides); ensemble
+  parquets exactly reproduce median+rounding at all 268,180 rows; all 55 origins
+  resolved at the Wednesday anchor (fallback never fired); contamination tests
+  byte-identical; one origin retrained bit-for-bit. Best finding: the gate is
+  CONSERVATIVE — 3 holiday-week 2024-25 origins gave the official run fresher
+  (Thursday+) data than our live-Wednesday vintage; info-equal subset: lgbm 0.7311,
+  ensemble 0.8222 (documented in wis_baseline.json). Fixed from findings: vacuous
+  crossing test replaced with a self-validating fixture (raw boosters provably
+  cross; deleting the sort now fails tests — previously 210/212 real tasks would
+  cross undetected); vintage fallback made strictly-earlier-only.
 
 ## Verify
 
 `make check` (offline) · `make test-integration` (network; ~40s warm)
+
+## Stated gaps (Phase D items)
+
+- Population table is the one non-vintaged input (current census vs 2024-25
+  snapshot: 53/53 rows differ, mean +1.27%): no outcome signal, forward/inverse
+  cancel, but vintage locations.csv properly in Phase D.
+- libomp is a Homebrew system dep for lightgbm — Docker/CI legs (Phase G).
+- vintage_is_usable passes negative staleness (future-dated rows) — harmless,
+  double-covered by downstream cutoff filters; tighten if Phase D touches it.
 
 ## Blockers
 

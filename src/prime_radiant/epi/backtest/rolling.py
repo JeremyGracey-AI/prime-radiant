@@ -41,7 +41,10 @@ def resolve_usable_vintage(  # pragma: no cover — needs the real clone; integr
     hub_clone: Path, origin: date, vintage_cache: Path | None
 ) -> pd.DataFrame:
     cutoff = origin - timedelta(days=7)
-    for days_back in (3, 2, 4, 5, 6, 7, 8, 9, 10):
+    # Strictly earlier-only fallback: days_back < 3 would admit Thursday+ commits
+    # a live Wednesday-11pm-ET run could never see (adversarial finding; the
+    # fallback never fired across all 55 gate origins — every one resolved at 3).
+    for days_back in (3, 4, 5, 6, 7, 8, 9, 10):
         try:
             frame = as_of(hub_clone, origin - timedelta(days=days_back), cache_dir=vintage_cache)
         except VintageNotFoundError:

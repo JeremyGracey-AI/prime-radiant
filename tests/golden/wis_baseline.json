@@ -32,6 +32,14 @@
       }
     },
     "regression_rule": "fail if any relative WIS above stored value * 1.02",
-    "note": "computed from data/backtest parquets vs official S3 files, final truth"
+    "note": "computed from data/backtest parquets vs official S3 files, final truth",
+    "vintage_information_caveat": {
+      "note": "The 2024-25 gate is conservative: at 3 of 27 origins (2024-11-23, 2024-12-28, 2025-01-04) the official run saw fresher (Thursday+) data than the Wednesday-anchored backtest vintage; on the 24 information-equal origins lgbm=0.7311, ensemble=0.8222. Our backtest baseline scores 1.0808 vs official on 2024-25 entirely due to those 3 origins (24 pool to 1.0000; 2025-26: 0.999945). The Phase B 0.999989 used fingerprint-MATCHED vintages, a different resolution method than the backtest's live-Wednesday anchor.",
+      "information_equal_subset_2024_25": {
+        "n_origins": 24,
+        "lgbm": 0.7311,
+        "ensemble": 0.8222
+      }
+    }
   }
 }
