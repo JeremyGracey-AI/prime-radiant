@@ -26,6 +26,16 @@ schemas; VCR cassettes for Socrata. Done: 53 locations × every season since 202
   value is nullable on purpose (submission layer stays strict int)
 - done: fixtures recorded from real sources (locations.csv, target-data slice,
   NHSN cassettes ~564K)
+- done: adversarial verification (4-agent workflow: leakage, schema fidelity, test
+  honesty, gates). Leakage claim survived; demonstrated defects fixed + regression-
+  tested (commit 90f0460): (sha,file) cache key, UTC-normalized committed_at,
+  --first-parent vintage resolution, 53-code location isin, schema scoped to the
+  shipped target, 23-level completeness check, cache-poison read-path test.
+  Deferred to later phases (documented, hub-side scans showed zero real-world hits):
+  Eastern-evening staleness is conservative-only; author/committer forgery is out of
+  threat model; per-target schemas for rate-change/peak/ed-visits land with their
+  phases; integration suite validated warm (cold-clone path re-exercised by deleting
+  data/hub).
 
 ## Next step
 
