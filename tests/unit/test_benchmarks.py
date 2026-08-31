@@ -33,6 +33,17 @@ class TestNormalizeModelOutput:
             "value",
         ]
 
+    def test_keeps_only_the_primary_target(self, official_frame: pd.DataFrame) -> None:
+        # 2025-26 official files carry a SECOND quantile target (prop ed visits);
+        # discovered when season concat produced 46-row task groups. Only
+        # 'wk inc flu hosp' may survive normalization.
+        other = official_frame.copy()
+        other["target"] = "wk inc flu prop ed visits"
+        stacked = pd.concat([official_frame, other], ignore_index=True)
+        frame = normalize_model_output(stacked)
+        assert set(frame["target"]) == {"wk inc flu hosp"}
+        assert len(frame) == 6095
+
     def test_output_type_id_becomes_float(self, official_frame: pd.DataFrame) -> None:
         frame = normalize_model_output(official_frame)
         assert frame["output_type_id"].dtype == float

@@ -29,8 +29,15 @@ _SUBMISSION_COLUMNS = [
 
 
 def normalize_model_output(raw: pd.DataFrame) -> pd.DataFrame:
-    """Mirror parquet -> our 8-column quantile frame (SubmissionSchema-shaped)."""
-    frame = raw.loc[raw["output_type"] == "quantile"].copy()
+    """Mirror parquet -> our 8-column quantile frame (SubmissionSchema-shaped).
+
+    Filters to the primary target: 2025-26 official files carry a SECOND quantile
+    target (wk inc flu prop ed visits) that silently doubled task groups when
+    only output_type was filtered.
+    """
+    frame = raw.loc[
+        (raw["output_type"] == "quantile") & (raw["target"] == "wk inc flu hosp")
+    ].copy()
     frame["output_type_id"] = frame["output_type_id"].astype(float)
     frame["reference_date"] = pd.to_datetime(frame["reference_date"])
     frame["target_end_date"] = pd.to_datetime(frame["target_end_date"])

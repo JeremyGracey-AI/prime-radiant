@@ -12,5 +12,26 @@
   "replica_mean_wis": 263.126321,
   "replica_over_official_relative_wis": 0.999989,
   "generated": "2026-08-31",
-  "note": "scored vs season-final truth; task set = non-NA truth intersected across both outputs"
+  "note": "scored vs season-final truth; task set = non-NA truth intersected across both outputs",
+  "phase_c": {
+    "generated": "2026-08-31",
+    "scored_horizons": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "relative_wis_vs_official_baseline": {
+      "2024-25": {
+        "lgbm": 0.7958,
+        "ensemble": 0.8989
+      },
+      "2025-26": {
+        "lgbm": 0.5915,
+        "ensemble": 0.7474
+      }
+    },
+    "regression_rule": "fail if any relative WIS above stored value * 1.02",
+    "note": "computed from data/backtest parquets vs official S3 files, final truth"
+  }
 }

@@ -1,54 +1,38 @@
 # Current task
 
-Phase 2 (FluSight epi forecaster) — Phase B: Scorer + baselines. Brief: `HANDOFF_PHASE2.md`.
+Phase 2 (FluSight epi forecaster) — Phase C: Model + ensemble. Brief: `HANDOFF_PHASE2.md`.
 
 ## Goal
 
-`eval/wis.py`, FluSight-baseline replica, seasonal-naive, hubverse formatter/validator.
-Done = our WIS scores the official FluSight-baseline (S3) and our replica within
-tolerance of each other on 2024-25; golden submission file committed.
+LightGBM quantile model + per-quantile-median ensemble with the baseline replica.
+Gate: relative WIS < 1.0 vs official FluSight-baseline on >=2 seasons, horizons 0-3,
+vintage data.
 
 ## Current state
 
-- done: `eval/wis.py` (pinball formulation, WIS = 2×mean pinball; scoringutils-convention
-  decomposition; inclusive 50/95 coverage; relative WIS) — TDD'd from the hand-computed
-  16/3 example out of Bracher et al.'s own algebra
-- done: `eval/scoring.py` (frame-level per-task scoring, NA-truth dropped)
-- done: `epi/models/baseline.py` — replica of epipredict::cdc_baseline_forecaster
-  (verified from R source): deterministic type-7 quantile grid, pause-excluded
-  7-day-join diffs, cumulative shuffled convolution at horizons 1-3, floor/ceil
-  rounding; own seeded numpy RNG keyed on reference_date. `epi/models/seasonal.py`
-  (reference-only). `epi/models/postprocess.py` shared rounding.
-- done: `epi/submission/format.py` + `validate.py` (live tasks.json cross-check;
-  drift fails loudly). `epi/data/benchmarks.py` (anonymous S3, parquet-only mirror,
-  normalizes round_id/model_id extras).
-- done: `epi/replication.py` — **vintage fingerprinting**: official h=-1 rows identify
-  the exact vintage the official Wednesday run saw; replica fed that vintage.
-- **DONE CONDITION RESULT (2024-25, 27 weeks, 5,724 scored tasks, horizons 0-3):**
-  replica/official relative WIS = **0.999989** (mean 263.126 vs 263.129) — see
-  `tests/golden/wis_baseline.json`. Horizon-0 values match exactly except rare ±1
-  from cross-language float rounding (R vs numpy ~1e-12 at ceil/floor boundaries;
-  diagnosed, documented in the integration test; ≤0.5% rate asserted).
-- done: golden `tests/golden/2024-11-23-prime-radiant-replica.csv` committed and
-  byte-reproduced by `tests/integration/test_golden.py` (cross-session determinism).
-- done: hypothesis property — arbitrary histories through replica+formatter always
-  pass SubmissionSchema. 100 offline tests, cov 95.8%; 5 integration tests green.
-- done: adversarial verification (4 agents). REPLICA CLAIM SURVIVED emphatically:
-  constants empirically pinned (window 2022-08-06 + pause exclusion verified against
-  the archived 2024-25 R script AND by perturbation — wrong constants break 500+
-  cells/week); fingerprint unambiguous on all 27 dates; h=-1 exact 32,913/32,913;
-  full-season h0 sweep 99.88% exact, nothing beyond +-1. WIS VALIDATION REFUTED and
-  fixed (commit follows): old _check_symmetric had a tautological condition and
-  missed below-0.5/even/crossed/boundary level sets — rewritten with 9 new rejection
-  tests; validator now tested against MUTATED tasks.json (hub-side drift), wraps
-  structural KeyError, searches all rounds; golden compare is check_exact.
-
-## Next step
-
-Phase C: LightGBM quantile model (lag/diff/seasonal features), monotone/non-negative/
-integer postprocessing, per-quantile-median ensemble with the baseline replica.
-Done gate: relative WIS < 1.0 vs FluSight-baseline on >=2 retrospective seasons at
-horizons 0-3, computed on vintage data. If not: fix features before adding models.
+- **GATE PASSED, both seasons, both models:** 2024-25 lgbm 0.7958 / ensemble 0.8989;
+  2025-26 lgbm 0.5915 / ensemble 0.7474 (relative WIS vs OFFICIAL baseline files,
+  final truth, shared task sets). Goldens in tests/golden/wis_baseline.json with the
+  <=2%-regression rule enforced by the gate test.
+- done: lightgbm==4.7.0 exact pin (arm64 wheel; Homebrew libomp system dep — note
+  for Phase G Docker/CI); native lgb.train, deterministic+force_row_wise+seed+
+  num_threads=1; determinism verified empirically (identical reruns).
+- done: epi/features/ — flusion-derived: 4th-root per-100k rate transform with
+  per-location in-season 95th-pct scale/center (fitted PER ORIGIN <= cutoff; leakage
+  property covers scaler + features), lags/diffs/rolling means/slopes, season_week/
+  delta_xmas, pooled panel with one-hot location + log_pop + horizon-as-feature,
+  delta targets, in-season weeks 5-45 training filter.
+- done: epi/models/lgbm_quantile.py (23 boosters, post-hoc sort in transformed
+  space, invert, clip; ints only at submission), ensemble.py (per-quantile median).
+- done: epi/backtest/rolling.py — vintage anchor origin-3d (Wednesday), two-condition
+  usability guard, parquet persistence under data/backtest (54 origins cached; full
+  cold run ~4-6 min on this machine, warm reruns seconds).
+- done: old-form vintage adapter in hub.py (2023-24 unlocked for Phase D).
+- fixed en route: benchmarks normalizer now filters to the primary target — 2025-26
+  official files carry a SECOND quantile target (prop ed visits) that doubled task
+  groups; the adversarially-rebuilt WIS validation caught it as duplicate levels.
+- 146 offline tests (cov 95.58%) + 6 integration green.
+- NOT yet run: Phase C adversarial verification workflow (next before declaring done).
 
 ## Verify
 

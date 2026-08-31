@@ -19,6 +19,10 @@ TARGET_FILE = "target-data/target-hospital-admissions.csv"
 
 def load_target_data(path: Path) -> pd.DataFrame:
     frame = pd.read_csv(path, dtype={"location": str})
+    # Old-form vintages (2023-10-19 .. 2024-05-06, 32 commits) carry a leading
+    # unnamed index column; the 5 real columns are identical. Drop it so the
+    # 2023-24 season's vintages load.
+    frame = frame.drop(columns=[c for c in frame.columns if c.startswith("Unnamed:")])
     frame["date"] = pd.to_datetime(frame["date"])
     frame = frame.sort_values(["location", "date"]).reset_index(drop=True)
     return RawTargetSchema.validate(frame)
