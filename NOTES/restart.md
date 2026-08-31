@@ -44,6 +44,14 @@ vintage data.
   cross; deleting the sort now fails tests — previously 210/212 real tasks would
   cross undetected); vintage fallback made strictly-earlier-only.
 
+## Next step
+
+Phase D: honest rolling-origin backtest reports — reliability diagrams, WIS
+decomposition, comparison table vs FluSight-baseline / FluSight-ensemble /
+UMass-flusion (from S3), wins AND losses shown plainly; reports/backtest_<season>.csv
++ reports/calibration.png. Queued from gaps: log1p scoring scale, vintaged
+locations.csv, 2023-24 season via the old-form adapter.
+
 ## Verify
 
 `make check` (offline) · `make test-integration` (network; ~40s warm)
