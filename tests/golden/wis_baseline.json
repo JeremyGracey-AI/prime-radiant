@@ -1,0 +1,16 @@
+{
+  "season": "2024-25",
+  "horizons": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "n_tasks": 5724,
+  "n_reference_dates": 27,
+  "official_mean_wis": 263.129149,
+  "replica_mean_wis": 263.126321,
+  "replica_over_official_relative_wis": 0.999989,
+  "generated": "2026-08-31",
+  "note": "scored vs season-final truth; task set = non-NA truth intersected across both outputs"
+}

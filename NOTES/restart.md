@@ -1,68 +1,61 @@
 # Current task
 
-Phase 2 (FluSight epi forecaster) — Phase A: Data + contracts. Brief: `HANDOFF_PHASE2.md`.
+Phase 2 (FluSight epi forecaster) — Phase B: Scorer + baselines. Brief: `HANDOFF_PHASE2.md`.
 
 ## Goal
 
-Loaders for hub target-data (current + git vintages), locations, epiweek math; pandera
-schemas; VCR cassettes for Socrata. Done: 53 locations × every season since 2022-23;
-`as_of(date)` strictly ≤ date; contract tests green; all gates pass.
+`eval/wis.py`, FluSight-baseline replica, seasonal-naive, hubverse formatter/validator.
+Done = our WIS scores the official FluSight-baseline (S3) and our replica within
+tolerance of each other on 2024-25; golden submission file committed.
 
 ## Current state
 
-- done: house-style retool — hatchling backend, ruff line-length 100 + format, pyright
-  basic, markers `unit|integration|contract|e2e`, coverage gate 85 (actual: 96%),
-  Makefile (`install-dev test lint typecheck check`), `requires-python >=3.11`
-- done: `epi/data/epiweek.py` (reference_date/target_end_date math),
-  `epi/data/locations.py` (53-code universe + NHSN jurisdiction bridge),
-  `epi/data/hub.py` (blobless+sparse clone → 169 MB vs ~620 MB full; loader),
-  `epi/data/vintages.py` (git-history as_of + parquet cache by sha),
-  `epi/data/nhsn.py` (Socrata anonymous, 67→53 jurisdiction filter),
-  `epi/schemas.py` (RawTarget/Submission/Feature; submission enforces int values +
-  quantile monotonicity — tasks.json only enforces double≥0)
-- done: 54 tests (52 offline: unit+contract incl. hypothesis leakage property on a
-  synthetic git repo; 2 integration vs the real clone — the done condition passes)
-- done: real-data discovery — the hub target file carries NA cells; RawTargetSchema
-  value is nullable on purpose (submission layer stays strict int)
-- done: fixtures recorded from real sources (locations.csv, target-data slice,
-  NHSN cassettes ~564K)
-- done: adversarial verification (4-agent workflow: leakage, schema fidelity, test
-  honesty, gates). Leakage claim survived; demonstrated defects fixed + regression-
-  tested (commit 90f0460): (sha,file) cache key, UTC-normalized committed_at,
-  --first-parent vintage resolution, 53-code location isin, schema scoped to the
-  shipped target, 23-level completeness check, cache-poison read-path test.
-  Deferred to later phases (documented, hub-side scans showed zero real-world hits):
-  Eastern-evening staleness is conservative-only; author/committer forgery is out of
-  threat model; per-target schemas for rate-change/peak/ed-visits land with their
-  phases; integration suite validated warm (cold-clone path re-exercised by deleting
-  data/hub).
+- done: `eval/wis.py` (pinball formulation, WIS = 2×mean pinball; scoringutils-convention
+  decomposition; inclusive 50/95 coverage; relative WIS) — TDD'd from the hand-computed
+  16/3 example out of Bracher et al.'s own algebra
+- done: `eval/scoring.py` (frame-level per-task scoring, NA-truth dropped)
+- done: `epi/models/baseline.py` — replica of epipredict::cdc_baseline_forecaster
+  (verified from R source): deterministic type-7 quantile grid, pause-excluded
+  7-day-join diffs, cumulative shuffled convolution at horizons 1-3, floor/ceil
+  rounding; own seeded numpy RNG keyed on reference_date. `epi/models/seasonal.py`
+  (reference-only). `epi/models/postprocess.py` shared rounding.
+- done: `epi/submission/format.py` + `validate.py` (live tasks.json cross-check;
+  drift fails loudly). `epi/data/benchmarks.py` (anonymous S3, parquet-only mirror,
+  normalizes round_id/model_id extras).
+- done: `epi/replication.py` — **vintage fingerprinting**: official h=-1 rows identify
+  the exact vintage the official Wednesday run saw; replica fed that vintage.
+- **DONE CONDITION RESULT (2024-25, 27 weeks, 5,724 scored tasks, horizons 0-3):**
+  replica/official relative WIS = **0.999989** (mean 263.126 vs 263.129) — see
+  `tests/golden/wis_baseline.json`. Horizon-0 values match exactly except rare ±1
+  from cross-language float rounding (R vs numpy ~1e-12 at ceil/floor boundaries;
+  diagnosed, documented in the integration test; ≤0.5% rate asserted).
+- done: golden `tests/golden/2024-11-23-prime-radiant-replica.csv` committed and
+  byte-reproduced by `tests/integration/test_golden.py` (cross-session determinism).
+- done: hypothesis property — arbitrary histories through replica+formatter always
+  pass SubmissionSchema. 100 offline tests, cov 95.8%; 5 integration tests green.
+- NOT yet run this session: adversarial verification workflow (next step before
+  declaring Phase B done).
 
 ## Next step
 
-Phase B (scorer + baselines): `eval/wis.py` with a hand-computed WIS example test;
-FluSight-baseline replica; validate scorer + replica together against official
-FluSight-baseline output from S3 (bucket `cdcepi-flusight-forecast-hub`, anonymous
-pyarrow) on 2024-25. Golden submission file committed.
+Adversarial verification of Phase B (refuters: WIS math vs scoringutils semantics,
+replica-fidelity attacks, test honesty, gates), fix findings, then commit + close.
+After that: Phase C (LightGBM quantile model + ensemble; gate relative WIS < 1.0).
 
 ## Verify
 
-`make check` (= ruff check + format --check + pyright + pytest-cov≥85, offline)
-`uv run pytest tests/integration -m integration` (needs network/clone)
+`make check` (offline) · `make test-integration` (network; ~40s warm)
 
 ## Blockers
 
-- None for Phase A.
-- Season 2026-27 guidance lands ~Oct 2026 — re-verify tasks.json + registration then.
+- None. Fingerprinting resolved the vintage-anchor problem (Saturday as_of is ~3 days
+  late vs the official Wednesday run; hub commits land Wed/Thu).
 
 ## Notes / gaps
 
-- **Metaculus thread (Phase 1) parked** at its Phase B (retrieval); its client + tests
-  remain green in `tests/unit/`. `NEWS_API_KEY` still intentionally empty.
-- `eval/` package does not exist yet — Phase B creates it (`wis.py` first; the brief's
-  `brier.py`/`calibration.py` belong to the parked Metaculus phases).
-- ai-use check action has NO tags (verified) — when CI lands (Phase G), pin
-  `JeremyGracey-AI/ai-use/check@eadf1067e62c2e209b926df8e4115a702ef13ee8`.
-- No "clean-code" skill exists on this machine (Phase 1 note stands); stand-in:
-  superpowers TDD + ruff/pyright/coverage gates.
-- data/hub clone is gitignored and disposable; delete + rerun integration suite to
-  rebuild. Vintage parquet cache in data/vintage_cache keyed by commit sha.
+- Replica horizons ≥1 cannot be bit-exact vs official (R RNG); validated via season
+  WIS ratio instead — landed at 0.999989.
+- Official "relative WIS" is the pairwise geometric-mean variant; ours is the plain
+  ratio on identical task sets (documented in wis.py).
+- `epi/replication.py` is integration-tested only (pragma: no cover with rationale).
+- Metaculus thread still parked; ai-use SHA pin + pre-commit still Phase G items.
