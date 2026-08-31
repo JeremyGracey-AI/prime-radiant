@@ -12,10 +12,13 @@ from datetime import date, timedelta
 from pathlib import Path
 
 import pandas as pd
+import pandera.errors
 
 from prime_radiant.epi.data.vintages import VintageNotFoundError, as_of, resolve_vintage
 from prime_radiant.epi.models.baseline import flusight_baseline
 from prime_radiant.epi.submission.format import build_submission_frame
+
+_SCHEMA_ERRORS = (pandera.errors.SchemaError, pandera.errors.SchemaErrors)
 
 
 def official_last_values(official: pd.DataFrame) -> pd.Series:  # pragma: no cover
@@ -46,7 +49,13 @@ def fingerprint_vintage(  # pragma: no cover
         if vintage.sha in seen:
             continue
         seen.add(vintage.sha)
-        frame = as_of(hub_clone, candidate, cache_dir=vintage_cache)
+        try:
+            frame = as_of(hub_clone, candidate, cache_dir=vintage_cache)
+        except _SCHEMA_ERRORS:
+            # Old-form hub vintages (pre-2024-05, leading unnamed index column)
+            # fail RawTargetSchema; skip the candidate instead of crashing — the
+            # deep end of the probe window can reach one (adversarial finding).
+            continue
         window = frame.loc[frame["date"] <= cutoff].dropna(subset=["value"])
         last = (
             window.sort_values("date").groupby("location")["value"].last().round().astype(int)

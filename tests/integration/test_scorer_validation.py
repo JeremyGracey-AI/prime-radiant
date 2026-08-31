@@ -71,15 +71,20 @@ class TestScorerAndReplicaCrossValidation:
             # ~1e-12 on interpolated quantiles, and floor/ceil amplifies that to
             # exactly +-1 at integer boundaries (diagnosed 2026-08-31: raw
             # 3302.0000000000005 vs R's 3302.0, and 140.0 vs R's 140.000...1).
-            # Anything beyond +-1, or more than 0.5% affected, is a real defect.
+            # Bar calibrated by the adversarial full-season sweep: worst date
+            # 2025-02-15 at 1.07% off-by-1, every breaching cell within 6e-14 of
+            # an integer. Real algorithm defects measure 40%+ (perturbing the
+            # window/pause constants broke 500+/1219 cells), so 2% separates
+            # noise from defect with an order of magnitude on each side.
+            # Beyond +-1 is always a real defect.
             deltas = (ours - theirs).abs()
             assert int((deltas > 1).sum()) == 0, (
                 f"{reference_date}: differences beyond +-1 at {deltas[deltas > 1].index.tolist()}"
             )
             mismatch_rate = float((deltas == 1).mean())
-            assert mismatch_rate <= 0.005, (
+            assert mismatch_rate <= 0.02, (
                 f"{reference_date}: {mismatch_rate:.2%} of horizon-0 values off by 1 "
-                "(rounding-boundary noise should be far rarer)"
+                "(float-boundary noise peaked at 1.07% across 2024-25)"
             )
 
     def test_season_wis_ratio_within_tolerance(

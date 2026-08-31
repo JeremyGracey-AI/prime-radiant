@@ -66,4 +66,11 @@ horizons 0-3, computed on vintage data. If not: fix features before adding model
 - Official "relative WIS" is the pairwise geometric-mean variant; ours is the plain
   ratio on identical task sets (documented in wis.py).
 - `epi/replication.py` is integration-tested only (pragma: no cover with rationale).
+- **Deliberately deferred to Phase D** (state-the-gap): log1p scoring scale (official
+  pipeline scores natural AND log(x+1); needed for official-comparable reports, not
+  for the Phase B done condition). Two replica divergences proven unreachable in the
+  2024-25 backtest, documented by the adversarial pass: anchor value is window- but
+  not pause-filtered (only matters for mid-pause reference dates); h=-1 uses
+  per-location last value vs official's global-max-date slice (equivalent 27/27
+  dates this season). Revisit if Phase D backtests pre-2024-25 seasons.
 - Metaculus thread still parked; ai-use SHA pin + pre-commit still Phase G items.
