@@ -35,6 +35,9 @@ dependencies = [
     # EXACT pin: LightGBM determinism holds only within one compiled binary —
     # docs state results differ across versions/compilers/systems.
     "lightgbm==4.7.0",
+    # <3.12 cap: report PNGs are committed artifacts; hold the rendering series
+    # stable within a phase so regeneration diffs stay meaningful.
+    "matplotlib>=3.11,<3.12",
 ]
 
 [project.urls]

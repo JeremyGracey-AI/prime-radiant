@@ -23,8 +23,8 @@
     ],
     "relative_wis_vs_official_baseline": {
       "2024-25": {
-        "lgbm": 0.7958,
-        "ensemble": 0.8989
+        "lgbm": 0.7939,
+        "ensemble": 0.8976
       },
       "2025-26": {
         "lgbm": 0.5915,
@@ -40,6 +40,7 @@
         "lgbm": 0.7311,
         "ensemble": 0.8222
       }
-    }
+    },
+    "population_vintage_fix": "Re-recorded 2026-08-31 after vintaging the population table (Phase C used current-census for all seasons): 2024-25 lgbm 0.7958->0.7939, ensemble 0.8989->0.8976 (the anachronism was mildly hurting us); 2025-26 unchanged (its snapshot IS the current file). The information-equal subset figures in vintage_information_caveat predate this fix; directionally unchanged."
   }
 }

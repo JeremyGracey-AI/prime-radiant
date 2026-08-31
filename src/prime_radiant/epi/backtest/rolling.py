@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from prime_radiant.epi.data.locations import season_locations_filename
 from prime_radiant.epi.data.vintages import VintageNotFoundError, as_of
 from prime_radiant.epi.features.assemble import prepare_origin
 from prime_radiant.epi.models.baseline import flusight_baseline
@@ -77,15 +78,20 @@ def to_integer_submission(continuous: pd.DataFrame, reference_date: date) -> pd.
 def run_origin(  # pragma: no cover — needs clone + ~30s of training; integration-tested
     hub_clone: Path,
     origin: date,
-    locations_csv: Path,
     output_dir: Path,
     vintage_cache: Path | None = None,
+    locations_csv: Path | None = None,
 ) -> dict[str, pd.DataFrame]:
-    """All three models for one origin, parquet-persisted and idempotent."""
+    """All three models for one origin, parquet-persisted and idempotent.
+
+    Populations default to the SEASON-CORRECT hub snapshot for the origin
+    (auxiliary-data/locations_2023xx.csv...), closing the census anachronism."""
     paths = {model: output_dir / model / f"{origin.isoformat()}.parquet" for model in MODELS}
     if all(path.exists() for path in paths.values()):
         return {model: pd.read_parquet(path) for model, path in paths.items()}
 
+    if locations_csv is None:
+        locations_csv = hub_clone / "auxiliary-data" / season_locations_filename(origin)
     vintage = resolve_usable_vintage(hub_clone, origin, vintage_cache)
     history = vintage.loc[:, ["date", "location", "value"]]
 
@@ -111,13 +117,12 @@ def run_origin(  # pragma: no cover — needs clone + ~30s of training; integrat
 def run_backtest(  # pragma: no cover — thin loop over run_origin; integration-tested
     hub_clone: Path,
     origins: Iterable[date],
-    locations_csv: Path,
     output_dir: Path,
     vintage_cache: Path | None = None,
 ) -> dict[str, pd.DataFrame]:
     collected: dict[str, list[pd.DataFrame]] = {model: [] for model in MODELS}
     for origin in origins:
-        frames = run_origin(hub_clone, origin, locations_csv, output_dir, vintage_cache)
+        frames = run_origin(hub_clone, origin, output_dir, vintage_cache)
         for model, frame in frames.items():
             collected[model].append(frame)
     return {model: pd.concat(parts, ignore_index=True) for model, parts in collected.items()}

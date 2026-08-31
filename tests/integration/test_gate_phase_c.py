@@ -52,7 +52,7 @@ class TestPhaseCGate:
             origins = _season_origins(prefixes, start, end)
             assert len(origins) >= 25, f"{season}: only {len(origins)} origins found"
 
-            ours = run_backtest(HUB_DIR, origins, LOCATIONS_CSV, BACKTEST_DIR, VINTAGE_CACHE)
+            ours = run_backtest(HUB_DIR, origins, BACKTEST_DIR, VINTAGE_CACHE)
             official = pd.concat(
                 [
                     fetch_model_output("FluSight-baseline", origin, cache_dir=BENCHMARK_CACHE)
