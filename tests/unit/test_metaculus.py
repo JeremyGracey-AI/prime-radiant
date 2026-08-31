@@ -8,7 +8,7 @@ import pytest
 
 from prime_radiant.metaculus import parse_binary_question
 
-FIXTURE = Path(__file__).parent / "fixtures" / "posts_response.json"
+FIXTURE = Path(__file__).parent.parent / "fixtures" / "posts_response.json"
 
 
 def load_posts() -> list[dict]:
@@ -33,9 +33,7 @@ def test_parse_binary_question_maps_core_fields() -> None:
         "*This forecasting question is associated with the Verity"
     )
     assert question.resolution_criteria is not None
-    assert question.resolution_criteria.startswith(
-        "The question will resolve as **Yes**"
-    )
+    assert question.resolution_criteria.startswith("The question will resolve as **Yes**")
     assert question.open_time == datetime(2026, 8, 19, 1, 10, tzinfo=UTC)
     assert question.close_time == datetime(2030, 1, 1, 0, 59, tzinfo=UTC)
 

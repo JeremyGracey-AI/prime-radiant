@@ -29,9 +29,7 @@ def parse_binary_question(raw: dict) -> Question:
     question_json = raw["question"]
     question_type = question_json["type"]
     if question_type != "binary":
-        raise ValueError(
-            f"Post {raw['id']} is {question_type!r}, expected a binary question"
-        )
+        raise ValueError(f"Post {raw['id']} is {question_type!r}, expected a binary question")
     return Question(
         post_id=raw["id"],
         question_id=question_json["id"],

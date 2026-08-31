@@ -1,54 +1,58 @@
 # Current task
 
-Phase A — Scaffold (from the Prime Radiant Phase 1 handoff brief).
+Phase 2 (FluSight epi forecaster) — Phase A: Data + contracts. Brief: `HANDOFF_PHASE2.md`.
 
 ## Goal
 
-Repo scaffold at canonical path + Metaculus client fetching open binary questions,
-validated by Ruff + Pyright + pytest.
+Loaders for hub target-data (current + git vintages), locations, epiweek math; pandera
+schemas; VCR cassettes for Socrata. Done: 53 locations × every season since 2022-23;
+`as_of(date)` strictly ≤ date; contract tests green; all gates pass.
 
 ## Current state
 
-- done: repo at `~/src/github.com/JeremyGracey-AI/prime-radiant`, git init, `.gitignore`
-  (`.env`, `data/`) before first commit
-- done: uv project, Python 3.12 pinned, deps (`forecasting-tools` + direct `pydantic`,
-  `pydantic-settings`, `python-dotenv`; dev: pytest/ruff/pyright)
-- done: `config.py` (cost caps: per-question $0.25, per-run $2.50), `metaculus.py`
-  (pure `parse_binary_question` + thin async-wrapped fetch via forecasting-tools)
-- done: 4 tests green against recorded-shape fixture; Ruff + Pyright clean
-- done: live smoke fetch — 5 real open binary questions fetched and parsed end-to-end
-  with Jeremy's METACULUS_TOKEN (2026-08-30 PM)
-- done: `tests/fixtures/posts_response.json` re-recorded from live API responses
-  (binary post 45207 + a real multiple_choice post; account-specific `my_forecasts`
-  redacted). Tests updated to recorded values; all green.
-- Phase A fully done: `uv run ruff check . && uv run pyright && uv run pytest` all clean.
+- done: house-style retool — hatchling backend, ruff line-length 100 + format, pyright
+  basic, markers `unit|integration|contract|e2e`, coverage gate 85 (actual: 96%),
+  Makefile (`install-dev test lint typecheck check`), `requires-python >=3.11`
+- done: `epi/data/epiweek.py` (reference_date/target_end_date math),
+  `epi/data/locations.py` (53-code universe + NHSN jurisdiction bridge),
+  `epi/data/hub.py` (blobless+sparse clone → 169 MB vs ~620 MB full; loader),
+  `epi/data/vintages.py` (git-history as_of + parquet cache by sha),
+  `epi/data/nhsn.py` (Socrata anonymous, 67→53 jurisdiction filter),
+  `epi/schemas.py` (RawTarget/Submission/Feature; submission enforces int values +
+  quantile monotonicity — tasks.json only enforces double≥0)
+- done: 54 tests (52 offline: unit+contract incl. hypothesis leakage property on a
+  synthetic git repo; 2 integration vs the real clone — the done condition passes)
+- done: real-data discovery — the hub target file carries NA cells; RawTargetSchema
+  value is nullable on purpose (submission layer stays strict int)
+- done: fixtures recorded from real sources (locations.csv, target-data slice,
+  NHSN cassettes ~564K)
 
 ## Next step
 
-Start Phase B (retrieval): query generation + date-filtered news fetch + relevance
-filter, with an explicit leakage unit test (post-cutoff article must be rejected).
-First task: verify whether tournament enrollment provides AskNews credentials; else
-get a free Serper key (serper.dev) for `NEWS_API_KEY`.
+Phase B (scorer + baselines): `eval/wis.py` with a hand-computed WIS example test;
+FluSight-baseline replica; validate scorer + replica together against official
+FluSight-baseline output from S3 (bucket `cdcepi-flusight-forecast-hub`, anonymous
+pyarrow) on 2024-25. Golden submission file committed.
 
 ## Verify
 
-`uv run ruff check . && uv run pyright && uv run pytest`
+`make check` (= ruff check + format --check + pyright + pytest-cov≥85, offline)
+`uv run pytest tests/integration -m integration` (needs network/clone)
 
 ## Blockers
 
 - None for Phase A.
-- News API decision deferred to Phase B: AskNews if tournament-provided, else Serper/NewsAPI
-  (`NEWS_API_KEY` in `.env` is intentionally empty until then).
-- forecasting-tools does NOT auto-load `.env`: callers must run python-dotenv's
-  `load_dotenv()` first (the Phase C run module should own this).
+- Season 2026-27 guidance lands ~Oct 2026 — re-verify tasks.json + registration then.
 
-## Notes / gaps (per house rules: state the gap)
+## Notes / gaps
 
-- Brief says "follow the clean-code skill" — no skill by that name exists on this machine;
-  stand-in: superpowers TDD + verification skills, Ruff strict-ish lint set, Pyright.
-- `forecasting-tools` is heavy (streamlit/litellm in its tree). Accepted for the time-box;
-  isolated behind `metaculus.py` (parse is ours, pure); swap path to thin httpx client
-  pre-declared if it fights back. Its `get_questions_matching_filter` is async — wrapped
-  in `asyncio.run` for now.
-- Metaculus legacy `api2` endpoint is dead (403); current API is `/api/posts/` and
-  requires auth even for reads.
+- **Metaculus thread (Phase 1) parked** at its Phase B (retrieval); its client + tests
+  remain green in `tests/unit/`. `NEWS_API_KEY` still intentionally empty.
+- `eval/` package does not exist yet — Phase B creates it (`wis.py` first; the brief's
+  `brier.py`/`calibration.py` belong to the parked Metaculus phases).
+- ai-use check action has NO tags (verified) — when CI lands (Phase G), pin
+  `JeremyGracey-AI/ai-use/check@eadf1067e62c2e209b926df8e4115a702ef13ee8`.
+- No "clean-code" skill exists on this machine (Phase 1 note stands); stand-in:
+  superpowers TDD + ruff/pyright/coverage gates.
+- data/hub clone is gitignored and disposable; delete + rerun integration suite to
+  rebuild. Vintage parquet cache in data/vintage_cache keyed by commit sha.
