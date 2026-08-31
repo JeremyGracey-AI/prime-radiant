@@ -55,9 +55,60 @@ class TestValidateSubmission:
             validate_submission(frame, TASKS_JSON)
 
     def test_rejects_quantile_level_drift(self) -> None:
-        # If the hub ever changes its level set, our constant must fail loudly
-        # against the recorded config rather than silently submitting.
+        # Frame-side drift: a level the hub doesn't know fails loudly.
         frame = build_submission_frame(_model_quantiles(), REFERENCE_DATE)
         frame.loc[frame.index[0], "output_type_id"] = 0.02  # not a hub level
         with pytest.raises(SubmissionInvalidError, match="quantile"):
             validate_submission(frame, TASKS_JSON)
+
+    def test_detects_hub_side_level_drift(self, tmp_path: Path) -> None:
+        # HUB-side drift: if the hub changes ITS level set, a frame built from our
+        # constants must fail against the live config. (Adversarial review found
+        # no test mutated tasks.json itself.)
+        import json
+
+        config = json.loads(TASKS_JSON.read_text())
+        for task in config["rounds"][0]["model_tasks"]:
+            quantile = task.get("output_type", {}).get("quantile")
+            if quantile is not None:
+                required = quantile["output_type_id"]["required"]
+                if 0.01 in required:
+                    required.remove(0.01)
+        drifted = tmp_path / "tasks.json"
+        drifted.write_text(json.dumps(config))
+
+        frame = build_submission_frame(_model_quantiles(), REFERENCE_DATE)
+        with pytest.raises(SubmissionInvalidError, match="quantile"):
+            validate_submission(frame, drifted)
+
+    def test_structural_hub_drift_raises_submission_error_not_keyerror(
+        self, tmp_path: Path
+    ) -> None:
+        # If the hub removes the quantile output type entirely, the declared
+        # failure mode is SubmissionInvalidError — never a raw KeyError.
+        import json
+
+        config = json.loads(TASKS_JSON.read_text())
+        for task in config["rounds"][0]["model_tasks"]:
+            task.get("output_type", {}).pop("quantile", None)
+        drifted = tmp_path / "tasks.json"
+        drifted.write_text(json.dumps(config))
+
+        frame = build_submission_frame(_model_quantiles(), REFERENCE_DATE)
+        with pytest.raises(SubmissionInvalidError):
+            validate_submission(frame, drifted)
+
+    def test_primary_target_found_in_any_round(self, tmp_path: Path) -> None:
+        # The hub may reorganize rounds; the validator must search all of them.
+        import json
+
+        config = json.loads(TASKS_JSON.read_text())
+        config["rounds"] = [
+            {"model_tasks": []},
+            config["rounds"][0],
+        ]
+        moved = tmp_path / "tasks.json"
+        moved.write_text(json.dumps(config))
+
+        frame = build_submission_frame(_model_quantiles(), REFERENCE_DATE)
+        validate_submission(frame, moved)  # must not raise

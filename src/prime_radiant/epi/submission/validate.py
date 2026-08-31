@@ -21,11 +21,13 @@ class SubmissionInvalidError(ValueError):
 
 def _primary_task(tasks_json_path: Path) -> dict:
     config = json.loads(tasks_json_path.read_text())
-    for task in config["rounds"][0]["model_tasks"]:
-        target_ids = task["task_ids"]["target"]
-        listed = (target_ids.get("required") or []) + (target_ids.get("optional") or [])
-        if PRIMARY_TARGET in listed:
-            return task
+    # Search every round: the hub may reorganize rounds between seasons.
+    for round_config in config.get("rounds", []):
+        for task in round_config.get("model_tasks", []):
+            target_ids = task["task_ids"]["target"]
+            listed = (target_ids.get("required") or []) + (target_ids.get("optional") or [])
+            if PRIMARY_TARGET in listed:
+                return task
     raise SubmissionInvalidError(f"{PRIMARY_TARGET!r} not found in {tasks_json_path}")
 
 
@@ -42,7 +44,14 @@ def validate_submission(frame: pd.DataFrame, tasks_json_path: Path) -> None:
     if unknown := frame_dates - allowed_dates:
         raise SubmissionInvalidError(f"reference_date(s) not a hub round: {sorted(unknown)}")
 
-    hub_levels = set(task["output_type"]["quantile"]["output_type_id"]["required"])
+    try:
+        hub_levels = set(task["output_type"]["quantile"]["output_type_id"]["required"])
+    except (KeyError, TypeError) as error:
+        # Structural hub-side drift (e.g. quantile output type removed) must fail
+        # as the declared error type, never leak a raw KeyError.
+        raise SubmissionInvalidError(
+            f"hub config no longer declares required quantile levels: {error!r}"
+        ) from error
     frame_levels = set(frame["output_type_id"])
     if frame_levels != hub_levels:
         raise SubmissionInvalidError(

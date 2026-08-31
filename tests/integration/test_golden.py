@@ -36,5 +36,8 @@ def test_replica_reproduces_committed_golden_exactly() -> None:
 
     committed = pd.read_csv(GOLDEN, dtype={"location": str}, parse_dates=False)
     pd.testing.assert_frame_equal(
-        fresh.reset_index(drop=True), committed.reset_index(drop=True), check_dtype=False
+        fresh.reset_index(drop=True),
+        committed.reset_index(drop=True),
+        check_dtype=False,
+        check_exact=True,  # "exactly reproducible" means exactly — no rtol slack
     )

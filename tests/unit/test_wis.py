@@ -62,6 +62,48 @@ class TestWis:
         with pytest.raises(ValueError, match="symmetric"):
             wis(np.array([0.25, 0.5, 0.9]), np.array([1.0, 2.0, 3.0]), 1.0)
 
+    # The five rejection cases below were demonstrated slipping through (or crashing)
+    # by adversarial review 2026-08-31: the old check's second condition was a
+    # mathematical tautology and the first was blind to all-below-0.5 sets.
+
+    def test_rejects_level_set_entirely_below_half(self) -> None:
+        with pytest.raises(ValueError, match="symmetric"):
+            wis(np.array([0.1, 0.2, 0.3]), np.array([1.0, 2.0, 3.0]), 1.0)
+
+    def test_rejects_even_length_set_without_median(self) -> None:
+        # Even symmetric sets make wis() and wis_components() disagree by exactly
+        # (K+0.5)/K — the pinball equivalence holds only for 2K+1 levels + median.
+        with pytest.raises(ValueError, match="median"):
+            wis(np.array([0.25, 0.75]), np.array([1.0, 3.0]), 0.0)
+
+    def test_rejects_boundary_levels_zero_and_one(self) -> None:
+        # alpha = 0 divides by zero in the interval form; both scorers must refuse.
+        with pytest.raises(ValueError, match="0 and 1"):
+            wis(np.array([0.0, 0.5, 1.0]), np.array([0.0, 5.0, 10.0]), -1.0)
+
+    def test_rejects_duplicate_levels_with_informative_message(self) -> None:
+        with pytest.raises(ValueError, match="duplicate"):
+            wis(np.array([0.25, 0.25, 0.5, 0.75, 0.75]), np.arange(5.0), 1.0)
+
+    def test_lone_median_is_a_valid_level_set(self) -> None:
+        # K=0: WIS reduces to |y - m|.
+        assert wis(np.array([0.5]), np.array([15.0]), 22.0) == pytest.approx(7.0)
+
+    def test_rejects_crossed_quantiles(self) -> None:
+        # Non-monotone quantile vectors previously produced NEGATIVE dispersion.
+        with pytest.raises(ValueError, match="non-decreasing"):
+            wis(np.array(LEVELS), np.array([3.0, 2.0, 1.0]), 2.0)
+
+
+class TestComponentsRejectionsMatchWis:
+    def test_components_reject_crossed_quantiles_too(self) -> None:
+        with pytest.raises(ValueError, match="non-decreasing"):
+            wis_components(np.array(LEVELS), np.array([3.0, 2.0, 1.0]), 2.0)
+
+    def test_components_reject_below_half_sets_too(self) -> None:
+        with pytest.raises(ValueError, match="symmetric"):
+            wis_components(np.array([0.1, 0.2, 0.3]), np.array([1.0, 2.0, 3.0]), 1.0)
+
 
 class TestWisComponents:
     def test_hand_computed_decomposition(self) -> None:

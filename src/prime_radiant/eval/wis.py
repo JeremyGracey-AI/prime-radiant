@@ -29,20 +29,45 @@ def pinball_loss(levels: FloatArray, quantiles: FloatArray, observed: float) -> 
     return (indicator - levels) * (quantiles - observed)
 
 
-def _check_symmetric(levels: FloatArray) -> None:
-    paired = np.sort(np.concatenate([levels, 1.0 - levels]))
-    if not np.allclose(np.sort(levels), np.unique(np.round(paired, 10))[: len(levels)]) or not (
-        np.allclose(np.sort(levels) + np.sort(1.0 - levels)[::-1], 1.0)
-    ):
+def _validate(levels: FloatArray, quantiles: FloatArray) -> tuple[FloatArray, FloatArray]:
+    """Enforce the 2K+1 contract the pinball<->interval equivalence is proved for.
+
+    Rewritten after adversarial review (2026-08-31) demonstrated the previous
+    check's second condition was a tautology and its first was blind to level
+    sets lying entirely below 0.5; even-length sets also slipped through and made
+    the two scorers disagree by exactly (K+0.5)/K, and crossed quantile vectors
+    produced negative dispersion.
+    """
+    order = np.argsort(levels)
+    ordered_levels = np.asarray(levels, dtype=float)[order]
+    ordered_quantiles = np.asarray(quantiles, dtype=float)[order]
+
+    if len(np.unique(np.round(ordered_levels, 10))) != len(ordered_levels):
+        raise ValueError(f"duplicate quantile levels: {ordered_levels.tolist()}")
+    if ordered_levels[0] <= 0.0 or ordered_levels[-1] >= 1.0:
+        raise ValueError("quantile levels must lie strictly between 0 and 1")
+    if len(ordered_levels) % 2 == 0:
         raise ValueError(
-            "quantile levels must form symmetric pairs (tau, 1-tau) around the median; "
-            f"got {sorted(levels.tolist())}"
+            "level set must include the median (K interval pairs + 0.5, odd count); "
+            f"got even count {len(ordered_levels)}"
         )
+    middle = ordered_levels[len(ordered_levels) // 2]
+    if not np.isclose(middle, 0.5):
+        raise ValueError(
+            f"level set must be symmetric around the median 0.5; middle level is {middle}"
+        )
+    if not np.allclose(ordered_levels + ordered_levels[::-1], 1.0):
+        raise ValueError(
+            f"quantile levels must form symmetric pairs (tau, 1-tau); got {ordered_levels.tolist()}"
+        )
+    if np.any(np.diff(ordered_quantiles) < 0):
+        raise ValueError("quantile values must be non-decreasing in level (crossed quantiles)")
+    return ordered_levels, ordered_quantiles
 
 
 def wis(levels: FloatArray, quantiles: FloatArray, observed: float) -> float:
     """WIS via the pinball formulation: (2 / n_levels) * sum of pinball losses."""
-    _check_symmetric(levels)
+    levels, quantiles = _validate(levels, quantiles)
     return float(2.0 / len(levels) * pinball_loss(levels, quantiles, observed).sum())
 
 
@@ -59,9 +84,7 @@ class WisComponents:
 
 def wis_components(levels: FloatArray, quantiles: FloatArray, observed: float) -> WisComponents:
     """Dispersion / over / underprediction via the interval form (paper eq. 1-2)."""
-    _check_symmetric(levels)
-    order = np.argsort(levels)
-    levels, quantiles = levels[order], quantiles[order]
+    levels, quantiles = _validate(levels, quantiles)
     n = len(levels)
     k_intervals = n // 2
     norm = 1.0 / (k_intervals + 0.5)

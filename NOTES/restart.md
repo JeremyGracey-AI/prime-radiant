@@ -33,14 +33,22 @@ tolerance of each other on 2024-25; golden submission file committed.
   byte-reproduced by `tests/integration/test_golden.py` (cross-session determinism).
 - done: hypothesis property — arbitrary histories through replica+formatter always
   pass SubmissionSchema. 100 offline tests, cov 95.8%; 5 integration tests green.
-- NOT yet run this session: adversarial verification workflow (next step before
-  declaring Phase B done).
+- done: adversarial verification (4 agents). REPLICA CLAIM SURVIVED emphatically:
+  constants empirically pinned (window 2022-08-06 + pause exclusion verified against
+  the archived 2024-25 R script AND by perturbation — wrong constants break 500+
+  cells/week); fingerprint unambiguous on all 27 dates; h=-1 exact 32,913/32,913;
+  full-season h0 sweep 99.88% exact, nothing beyond +-1. WIS VALIDATION REFUTED and
+  fixed (commit follows): old _check_symmetric had a tautological condition and
+  missed below-0.5/even/crossed/boundary level sets — rewritten with 9 new rejection
+  tests; validator now tested against MUTATED tasks.json (hub-side drift), wraps
+  structural KeyError, searches all rounds; golden compare is check_exact.
 
 ## Next step
 
-Adversarial verification of Phase B (refuters: WIS math vs scoringutils semantics,
-replica-fidelity attacks, test honesty, gates), fix findings, then commit + close.
-After that: Phase C (LightGBM quantile model + ensemble; gate relative WIS < 1.0).
+Phase C: LightGBM quantile model (lag/diff/seasonal features), monotone/non-negative/
+integer postprocessing, per-quantile-median ensemble with the baseline replica.
+Done gate: relative WIS < 1.0 vs FluSight-baseline on >=2 retrospective seasons at
+horizons 0-3, computed on vintage data. If not: fix features before adding models.
 
 ## Verify
 
