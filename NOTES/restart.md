@@ -55,8 +55,11 @@ Done = reports/backtest_<season>.csv + reports/calibration.png committed.
 
 ## Next step
 
-Phase D adversarial verification; fix findings; then Phase E (submission
-automation: weekly-forecast.yml, LIVE=1-gated PR to the hub fork, metadata.py).
+Phase E (submission automation): weekly-forecast.yml (cron Tue 22:00 UTC +
+manual dispatch -> fetch -> forecast -> validate -> file -> artifact), PR to the
+hub fork gated on LIVE=1 AND explicit go; metadata.py renders
+model-metadata/<team>-<model>.yml. New plan-mode session with verification
+workflow first (live-submission-adjacent machinery).
 
 ## Verify
 

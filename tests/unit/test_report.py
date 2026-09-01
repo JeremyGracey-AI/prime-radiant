@@ -14,10 +14,12 @@ from prime_radiant.epi.backtest.report import (
 pytestmark = pytest.mark.unit
 
 
-def _forecast_frame(shift: float = 0.0) -> pd.DataFrame:
-    # Two tasks; central 50% interval = (10, 20) around median 15 (+shift).
+def _forecast_frame(
+    shift: float = 0.0, teds: tuple[str, ...] = ("2025-12-06", "2025-12-13")
+) -> pd.DataFrame:
+    # Tasks at `teds`; central 50% interval = (10, 20) around median 15 (+shift).
     rows = []
-    for ted in ("2025-12-06", "2025-12-13"):
+    for ted in teds:
         for level, value in (
             (0.05, 5.0),
             (0.25, 10.0),
@@ -43,9 +45,13 @@ def _truth() -> pd.DataFrame:
     # the baseline-relative ae column 0/0.
     return pd.DataFrame(
         {
-            "date": [pd.Timestamp("2025-12-06"), pd.Timestamp("2025-12-13")],
-            "location": ["US", "US"],
-            "value": [16.0, 100.0],
+            "date": [
+                pd.Timestamp("2025-12-06"),
+                pd.Timestamp("2025-12-13"),
+                pd.Timestamp("2025-12-20"),
+            ],
+            "location": ["US", "US", "US"],
+            "value": [16.0, 100.0, 40.0],
         }
     )
 
@@ -62,30 +68,28 @@ class TestCoverageCurve:
 
 class TestLeagueRows:
     def test_relative_skill_on_common_tasks(self) -> None:
-        # DIVERGENT task sets: the mutant that deleted the intersection logic
-        # SURVIVED the old identical-set fixture (adversarial finding). Here the
-        # baseline covers two tasks but our model only the first, so relative
-        # columns MUST be computed on the 1-task intersection.
+        # PARTIALLY-OVERLAPPING task sets, neither containing the other:
+        # baseline covers {A,B}, ours covers {B,C}, intersection = {B}. This
+        # kills BOTH demonstrated mutant families: per-model-own-tasks (ours
+        # n_relative would be 2) and keep-last-model-keys (also 2). The first
+        # rebuild of this test used a CONTAINED subset and the last-keys mutant
+        # accidentally computed the correct intersection — verified empirically.
         truth = _truth()
-        partial = _forecast_frame(shift=5.0)
-        partial = partial.loc[partial["target_end_date"] == pd.Timestamp("2025-12-06")]
         frames = {
-            "FluSight-baseline": _forecast_frame(),
-            "our-model": partial,
+            "FluSight-baseline": _forecast_frame(teds=("2025-12-06", "2025-12-13")),
+            "our-model": _forecast_frame(shift=5.0, teds=("2025-12-13", "2025-12-20")),
         }
         rows = league_rows(frames, truth, season="2025-26", truth_as_of="2026-07-09")
         table = rows.set_index(["model_id", "horizon"])
         base = table.loc[("FluSight-baseline", "all")]
         ours = table.loc[("our-model", "all")]
-        assert base["n"] == 2
-        assert base["n_relative"] == 1  # shrunk to the intersection
-        assert int(ours["n"]) == int(ours["n_relative"]) == 1
+        assert base["n"] == 2 and ours["n"] == 2
+        assert base["n_relative"] == 1 and ours["n_relative"] == 1  # exactly {B}
         assert base["wis_scaled_relative_skill"] == pytest.approx(1.0)
 
-        # expected ratio on the intersection ONLY (task 2025-12-06): recompute
-        # both models' single-task wis independently via league_rows on a truth
-        # frame restricted to that task
-        restricted_truth = truth.loc[truth["date"] == pd.Timestamp("2025-12-06")]
+        # expected ratio on the intersection ONLY (task B = 2025-12-13),
+        # recomputed independently on truth restricted to that task
+        restricted_truth = truth.loc[truth["date"] == pd.Timestamp("2025-12-13")]
         single = league_rows(frames, restricted_truth, season="s", truth_as_of="x").set_index(
             ["model_id", "horizon"]
         )
@@ -94,8 +98,7 @@ class TestLeagueRows:
             / single.loc[("FluSight-baseline", "all"), "wis"]
         )
         assert ours["wis_scaled_relative_skill"] == pytest.approx(expected_ratio)
-        # the deleted-intersection mutant reports ours_full_wis / base_full_wis,
-        # which differs because the baseline's FULL set includes the second task
+        # full-set means differ from intersection means on both sides
         assert ours["wis_scaled_relative_skill"] != pytest.approx(ours["wis"] / base["wis"])
         assert set(rows["truth_as_of"]) == {"2026-07-09"}
 
