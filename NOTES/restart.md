@@ -133,6 +133,20 @@ outward steps).
   PyPI pending publisher, Codecov app if needed, first release + publish
   dispatch --ref on the tag. HF_TOKEN rotation TODO still open from Phase F.
 
+- **The Prime Radiant Record shipped (2026-09-01 ~15:30 PDT)**: all eight
+  phase walkthroughs merged into one publication (HTML artifact + PDF),
+  committed at docs/prime-radiant-record.pdf, linked from the README and the
+  docs site (Pages serves it). Jeremy verified before the link landed. The
+  merge caught a real bug: the plotly cdnjs pin (3.7.0) never existed — the
+  Phase F walkthrough's live panels had been silently blank; both artifacts
+  republished on the verified 3.5.1 pin.
+- End-to-end health sweep on 4b18c87: git clean, local==origin; make check
+  (310, cov 95.95%) + make test-integration (11) + pre-commit --all-files all
+  green; ci/docs/ai-use green; all 7 public URLs 200 (incl. the PDF on GitHub
+  and Pages); badges resolve anonymously (passing / 96% / v0.1.0); Space
+  RUNNING; hub PR #3696 open awaiting maintainer CI; weekly cron active;
+  0 open PRs/issues.
+
 ## Next step
 
 Jeremy's flip word → execute flip + post-flip verification (docs deploy
