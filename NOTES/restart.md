@@ -44,6 +44,10 @@ YAML. Done = CI dry run emits a validating file; PR step skipped without LIVE.
   fixed (was dead code), writer refuses multi-reference-date frames.
 - **CI re-proof on the hardened workflow**: run 33458426164 — success; dry-run
   green, live-submit SKIPPED, submission artifact 19,900 bytes.
+- Accepted as-is (refuter-noted): validate_submission checks the subset
+  direction only for task ids; if the hub ever moves a task id to 'required',
+  add the completeness direction (moot today: every task id is optional, and
+  the 23 quantile levels ARE checked as strict set equality).
 - Process note (recorded): one commit slipped past lint because a gate chain
   piped `make check` through tail (pipeline exit = tail's); fixed in the next
   commit with the gate run unpiped. Gate commands in future sessions: never
