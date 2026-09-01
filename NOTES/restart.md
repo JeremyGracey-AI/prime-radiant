@@ -83,18 +83,52 @@ outward steps).
   workflow launched (4 researchers: tooling SHAs/psr-prefix, house precedents,
   Docker/docs, public-flip audit).
 
+## Phase G (same session, Jeremy's override of the one-phase rule)
+
+- done: plan approved after 4-researcher recon; built + pushed (9c6ad38,
+  e35cd68, 8299fc5): LICENSE (was the flip blocker), CITATION.cff, AI-USE.md +
+  pinned check workflow, CHANGELOG (psr-managed), CONTRIBUTING, model card,
+  ci.yml (matrix 3.11-3.13 + cleanroom wheel + docker w/ lightgbm smoke +
+  strict docs; codecov OIDC public-gated AND dependabot-excluded),
+  release.yml (dispatch-only uvx psr 10.6.2, noop default; psr_parser.py
+  strips the [claude] prefix — 0/28 unparseable, computes 0.1.0, proven in a
+  scratch clone end-to-end incl. uv.lock-in-release-commit at 0.1.1),
+  publish.yml (Trusted Publishing, public-gated, scoped sdist), docs.yml
+  (Pages, deploy public-gated), Dockerfile (digest-pinned, libgomp1 verified
+  required, nonroot) + .dockerignore, pre-commit (clean --all-files) +
+  .secrets.baseline, dependabot (4 ecosystems, python base-image ignore).
+- Repo settings hardened: description/topics fixed, wiki+projects off, ruleset
+  protect-master (deletion+non-fast-forward), sha_pinning_required=true, old
+  artifacts deleted.
+- Adversarial pass (4 refuters): release SURVIVED (psr end-to-end proven);
+  gates/docs-docker/mutations PARTIALLY REFUTED — 1 high (dependabot codecov
+  failure post-flip) + 5 medium + 6 low, ALL fixed with attack-derived guards
+  in 8299fc5; 12 mutants run, kills verified, honesty suite hardened against
+  every survivor. Gates: 310 offline, cov 95.95%; ci/docs/ai-use green on
+  8299fc5 (runs 33482841761/97/46); release --noop on a real runner printed
+  0.1.0 (33480745656); docs deploy verifiably SKIPPED while private.
+- Accepted residuals (stated): ruleset has no PR/status-check requirement
+  (solo-maintainer posture — direct pushes remain possible, honesty tests are
+  advisory against them); allowed_actions=all mitigated by sha_pinning_required;
+  uvx psr resolves transitive deps unpinned at run time; publish.yml's first
+  run under sha_pinning_required is the proof for pypa's runtime-generated
+  local action ref; ci docs-build duplicates docs.yml's build per master push
+  (waste, accepted); dependabot PRs #2/#3 (setup-uv v10, upload-artifact v7)
+  open — need rebase post-8299fc5 before merging; Metaculus thread still
+  parked.
+- NOT done (the gate): THE PUBLIC FLIP — Jeremy's word. Post-flip steps in
+  the runbook "Phase G — public flip sequence": Pages enable, push protection,
+  PyPI pending publisher, Codecov app if needed, first release + publish
+  dispatch --ref on the tag. HF_TOKEN rotation TODO still open from Phase F.
+
 ## Next step
 
-Present the Phase G plan (from the recon results) for Jeremy's evaluation;
-run it on his approval. The public flip remains its own explicit gate inside
-Phase G even under the override.
+Jeremy's flip word → execute flip + post-flip verification (docs deploy
+un-skips, badges green) → his browser steps (Pages source, push protection,
+PyPI pending publisher) → optional first release. Then next session: hub
+2026-27 re-verification ~Oct, first live submission ~Nov (explicit go).
 
 ## Verify
 
-`make check` (offline) · `make test-integration` (network; ~9min cold) ·
-`uv run python dashboard/app.py` (local boot, HTTP 200)
-
-## Blockers
-
-- None. Outward steps (Space/token/deploy/weekly-refresh wiring) are gated on
-  Jeremy by design — see NOTES/go-live-runbook.md "Dashboard go-live".
+`make check` (offline) · `make test-integration` (network) ·
+`uvx pre-commit run --all-files` · CI runs on master green.
