@@ -1,0 +1,50 @@
+# Releases are DELIBERATE: manual dispatch only, defaulting to a dry-run.
+# psr runs via uvx (exact version the custom parser was verified against) on
+# the runner — not the psr container action, which lacks uv and could not run
+# build_command = "uv lock && uv build". psr pushes the release commit + tag
+# itself using GH_TOKEN (persist-credentials stays false), which also means
+# the pushed tag does NOT fire publish.yml's push trigger (GITHUB_TOKEN
+# recursion guard) — dispatch publish.yml on the fresh tag afterwards.
+
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      noop:
+        description: "Dry-run (compute the version, change nothing)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      # the ONE write permission in this repo's workflows: psr pushes the
+      # release commit + tag, and only behind this manual dispatch
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+      - name: Release (python-semantic-release)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # env indirection: dispatch inputs never interpolate into shell
+          NOOP: ${{ inputs.noop }}
+        run: |
+          if [ "$NOOP" = "true" ]; then
+            uvx python-semantic-release==10.6.2 --noop version
+          else
+            uvx python-semantic-release==10.6.2 version
+          fi

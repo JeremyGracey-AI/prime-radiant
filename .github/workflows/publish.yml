@@ -1,0 +1,56 @@
+# PyPI via Trusted Publishing (OIDC) — no stored credential anywhere. The
+# pending-publisher registration on PyPI names THIS file and the `pypi`
+# environment; build and publish are separate jobs so the publishing
+# permission never touches the build. Manual dispatch exists because tags
+# pushed by release.yml's GITHUB_TOKEN cannot fire the push trigger
+# (recursion guard) — dispatch on the fresh tag after a release.
+
+name: publish
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+      - name: Build sdist + wheel
+        run: uv build
+      - name: Check metadata renders
+        run: uvx twine check dist/*
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/p/prime-radiant
+    permissions:
+      id-token: write # PyPI Trusted Publishing (OIDC)
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2

@@ -87,6 +87,41 @@ Jeremy's explicit go, exactly like the hub steps above.
    redeploy that run's STALE staged artifact — always dispatch fresh, never
    re-run.
 
+## Phase G — public flip sequence (Jeremy's gate) + post-flip steps
+
+Pre-flip (agent-executable on go): LICENSE committed; repo description/topics
+fixed; branch ruleset on master (no force-push/deletion); wiki+projects
+disabled; Actions `sha_pinning_required` on; old CI artifacts deleted
+(regenerate on next runs). Then **the flip itself is Jeremy's word**
+(`gh repo edit --visibility public --accept-visibility-change-consequences`).
+
+Post-flip, in order:
+1. Settings → Pages → Source: **GitHub Actions**, then dispatch `docs` (its
+   deploy job un-skips once the repo is public).
+2. Settings → Code security: enable secret-scanning **push protection**
+   (secret scanning itself turns on automatically for public repos).
+3. **PyPI pending publisher** (outward, Jeremy's account): pypi.org → account
+   → Publishing → add GitHub Actions publisher: project `prime-radiant`
+   (verified free), owner `JeremyGracey-AI`, repo `prime-radiant`, workflow
+   `publish.yml`, environment `pypi`. Until this exists, publish.yml's publish
+   job fails at PyPI — by design.
+4. Codecov: install/authorize the Codecov GitHub app for the repo if coverage
+   uploads don't appear (ci.yml uses OIDC, no stored token; the upload step is
+   public-gated and turns on at the flip). Then add the codecov badge.
+5. First release: dispatch `release` with noop=true (verify computed version
+   0.1.0), then noop=false; then dispatch `publish` on the fresh tag
+   (GITHUB_TOKEN-pushed tags cannot fire the push trigger). Then add the PyPI
+   badge.
+
+## Cron auto-disable watch (public repos)
+
+GitHub disables scheduled workflows after 60 days without repository activity;
+scheduled runs themselves do NOT reset the timer, and hub submissions land on
+the FORK, so FluSight season activity does not protect the weekly cron either.
+During Nov–May: ensure a commit lands at least every ~50 days OR re-enable via
+`gh workflow enable weekly-forecast` when the disable email arrives (it goes
+to whoever last touched the cron line).
+
 ## Standing cautions
 
 - Hub merges are done by human maintainers; unmerged late PRs are abandoned.

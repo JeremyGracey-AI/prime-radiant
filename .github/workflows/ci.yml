@@ -1,0 +1,102 @@
+# Offline gates on every push/PR, mirroring the Makefile exactly. Job topology
+# follows the governance-drift-researcher precedent (matrix test -> cleanroom
+# wheel); hardening follows this repo's own workflows. Pins reuse the house SHA
+# set (current-within-major, verified 2026-08-31); Dependabot keeps them moving.
+
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # test-only workflow: superseded runs are safe (and cheap) to cancel
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # codecov OIDC upload (public-gated step below); no stored token
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Sync environment
+        run: uv sync --all-groups
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Typecheck
+        # gradio writes its .pyi stubs at first import; a fresh venv fails
+        # pyright without the warm-up (adversarial finding, Phase F)
+        run: |
+          uv run python -c "import gradio"
+          uv run pyright
+      - name: Offline tests with coverage gate
+        run: uv run pytest -q -m "not integration" --cov=prime_radiant --cov-fail-under=85 --cov-report=xml
+      - name: Upload coverage (public repo only; OIDC, no stored token)
+        if: matrix.python-version == '3.12' && github.event.repository.private == false
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          use_oidc: true
+          files: coverage.xml
+
+  wheel:
+    # cleanroom: the built wheel must install and expose the CLI with no
+    # project checkout on the path
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+      - name: Build sdist + wheel
+        run: uv build
+      - name: Cleanroom install and CLI smoke
+        run: |
+          python3 -m venv /tmp/cleanroom
+          /tmp/cleanroom/bin/pip install --quiet dist/*.whl
+          /tmp/cleanroom/bin/prime-radiant --help
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Build image
+        run: docker build -t prime-radiant:ci .
+      - name: CLI smoke (entrypoint is the console script)
+        run: docker run --rm prime-radiant:ci --help
+
+  docs-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+      - name: Sync docs group
+        run: uv sync --group docs
+      - name: Build docs (strict — broken links/nav fail)
+        run: uv run mkdocs build --strict

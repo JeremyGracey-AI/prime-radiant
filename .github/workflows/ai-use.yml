@@ -1,0 +1,29 @@
+# Keeps AI-USE.md honest: fails when the declaration is missing, malformed,
+# or stale. The check action is pinned to the verified head of ai-use's main
+# (that repo has no tags — re-verified 2026-08-31).
+
+name: ai-use
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: JeremyGracey-AI/ai-use/check@eadf1067e62c2e209b926df8e4115a702ef13ee8
+        with:
+          max-age-days: "180"

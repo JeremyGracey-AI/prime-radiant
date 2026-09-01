@@ -1,0 +1,35 @@
+site_name: Prime Radiant
+site_description: Calibrated forecasting — CDC FluSight quantile forecaster and a parked Metaculus LLM thread.
+site_url: https://jeremygracey-ai.github.io/prime-radiant/
+repo_url: https://github.com/JeremyGracey-AI/prime-radiant
+repo_name: JeremyGracey-AI/prime-radiant
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep orange
+      accent: green
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep orange
+      accent: green
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Model card: model-card.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - pymdownx.superfences

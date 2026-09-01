@@ -1,0 +1,22 @@
+# Keeps four surfaces fresh: workflow action SHAs, uv-locked Python deps,
+# pre-commit hook revs, and Dockerfile base-image digests. The docker and
+# pre-commit ecosystems are deliberate additions over the parent brief's
+# actions+uv scope — digest and rev pins rot silently without them.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
