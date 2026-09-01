@@ -108,8 +108,9 @@ make check            # offline gates: ruff + format + pyright + pytest-cov
 make test-integration # network: real hub clone, S3 benchmarks, gate + reports
 ```
 
-Requires Homebrew `libomp` on macOS for LightGBM. Built with [Claude Code]
-(agentic coding assistant by Anthropic); every phase was adversarially verified
+Requires Homebrew `libomp` on macOS for LightGBM. Built with
+[Claude Code](https://claude.com/claude-code) (agentic coding assistant by
+Anthropic); every phase was adversarially verified
 by refuter agents before being declared done — see `NOTES/restart.md` and the
 `[claude]`-prefixed commit history.
 

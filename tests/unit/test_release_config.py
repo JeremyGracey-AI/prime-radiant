@@ -66,3 +66,33 @@ class TestReleaseHygiene:
         ).stdout.splitlines()
         offenders = [path for path in tracked if Path(path).name.lower().startswith("requirements")]
         assert offenders == []
+
+    def test_flip_blocker_files_are_tracked(self) -> None:
+        # LICENSE deletion survived every gate (surviving mutant k): a public
+        # repo without it is all-rights-reserved and the wheel silently drops
+        # its license file. Lock all the release-grade files.
+        tracked = set(
+            subprocess.run(
+                ["git", "-C", str(REPO_ROOT), "ls-files"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.splitlines()
+        )
+        for required in (
+            "LICENSE",
+            "CITATION.cff",
+            "AI-USE.md",
+            "CHANGELOG.md",
+            "CONTRIBUTING.md",
+            "docs/model-card.md",
+        ):
+            assert required in tracked, required
+
+    def test_sdist_is_scoped_to_the_package(self) -> None:
+        # default hatchling sdists ship the whole working tree (NOTES, handoff
+        # briefs, serve_data) to PyPI — the sdist target must stay scoped
+        # (adversarial finding)
+        pyproject = (REPO_ROOT / "pyproject.toml").read_text()
+        assert "[tool.hatch.build.targets.sdist]" in pyproject
+        assert "only-include" in pyproject

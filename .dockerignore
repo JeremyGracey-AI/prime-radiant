@@ -1,0 +1,13 @@
+# keep host cruft out of the build context (CI checkouts are clean; this
+# protects local builds)
+__pycache__/
+*.pyc
+.venv/
+data/
+site/
+dist/
+.git/
+serve_data/
+reports/
+tests/
+NOTES/

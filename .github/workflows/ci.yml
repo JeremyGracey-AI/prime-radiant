@@ -51,11 +51,15 @@ jobs:
       - name: Offline tests with coverage gate
         run: uv run pytest -q -m "not integration" --cov=prime_radiant --cov-fail-under=85 --cov-report=xml
       - name: Upload coverage (public repo only; OIDC, no stored token)
-        if: matrix.python-version == '3.12' && github.event.repository.private == false
+        # dependabot-triggered runs get a read-only token (id-token silently
+        # dropped), so getIDToken would fail every dependabot PR post-flip —
+        # hence the actor clause (adversarial finding)
+        if: matrix.python-version == '3.12' && github.event.repository.private == false && github.actor != 'dependabot[bot]'
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           use_oidc: true
           files: coverage.xml
+          fail_ci_if_error: true
 
   wheel:
     # cleanroom: the built wheel must install and expose the CLI with no
@@ -87,6 +91,10 @@ jobs:
         run: docker build -t prime-radiant:ci .
       - name: CLI smoke (entrypoint is the console script)
         run: docker run --rm prime-radiant:ci --help
+      - name: lightgbm import smoke (actually loads libgomp.so.1)
+        # --help defers heavy imports; only a real import proves the
+        # image's libgomp1 install works (adversarial finding)
+        run: docker run --rm --entrypoint python prime-radiant:ci -c "import lightgbm"
 
   docs-build:
     runs-on: ubuntu-latest

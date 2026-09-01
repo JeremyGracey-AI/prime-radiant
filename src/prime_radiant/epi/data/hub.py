@@ -5,6 +5,7 @@ with sparse-checkout of just target-data/, hub-config/ and auxiliary-data/ stays
 small while keeping the full commit graph locally — which is what vintages.py needs.
 """
 
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -32,6 +33,15 @@ def ensure_hub_clone(dest: Path, url: str = HUB_URL) -> Path:  # pragma: no cove
     # exercised by the integration suite against the real hub, not in unit runs.
     if (dest / ".git").exists():
         return dest
+    if shutil.which("git") is None:
+        # container context: the image ships no git — fail loud and clean
+        # instead of a raw subprocess FileNotFoundError after attempting a
+        # network clone from a command named `validate`
+        raise RuntimeError(
+            f"no hub clone at {dest} and no `git` on PATH to create one — "
+            "mount a data directory containing an existing hub clone "
+            "(see the Dockerfile header)"
+        )
     dest.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(
         ["git", "clone", "--filter=blob:none", "--sparse", url, str(dest)],

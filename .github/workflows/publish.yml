@@ -40,6 +40,9 @@ jobs:
           if-no-files-found: error
 
   publish:
+    # same public gate as codecov/docs: a pre-flip publish would ship the
+    # sdist publicly while the repo is still private
+    if: github.event.repository.private == false
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10

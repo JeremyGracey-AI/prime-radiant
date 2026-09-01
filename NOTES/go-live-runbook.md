@@ -104,14 +104,25 @@ Post-flip, in order:
    → Publishing → add GitHub Actions publisher: project `prime-radiant`
    (verified free), owner `JeremyGracey-AI`, repo `prime-radiant`, workflow
    `publish.yml`, environment `pypi`. Until this exists, publish.yml's publish
-   job fails at PyPI — by design.
+   job fails at PyPI — by design. Optional hardening (refuter-noted): the
+   `pypi` GitHub environment auto-creates UNPROTECTED on first run — pre-create
+   it in Settings → Environments with a deployment protection rule if wanted.
 4. Codecov: install/authorize the Codecov GitHub app for the repo if coverage
    uploads don't appear (ci.yml uses OIDC, no stored token; the upload step is
    public-gated and turns on at the flip). Then add the codecov badge.
 5. First release: dispatch `release` with noop=true (verify computed version
-   0.1.0), then noop=false; then dispatch `publish` on the fresh tag
-   (GITHUB_TOKEN-pushed tags cannot fire the push trigger). Then add the PyPI
-   badge.
+   0.1.0), then noop=false; then dispatch `publish` **with `--ref v0.1.0`**
+   (GITHUB_TOKEN-pushed tags cannot fire the push trigger; dispatching on the
+   tag ref, not master, guarantees the built artifact matches the tag). Then
+   add the PyPI badge. The first release commit contains only CHANGELOG.md —
+   pyproject/uv.lock are already at 0.1.0; the lock-in-release-commit mechanism
+   engages from 0.1.1 (refuter-verified, not a failure).
+
+Cautions (refuter-noted): NEVER re-run a pre-flip workflow run after the flip —
+re-runs reuse the frozen event payload (private=true) and the public gates stay
+skipped; always dispatch fresh. AI-USE.md staleness (max-age-days 180 from
+2026-08-31) first fails a push on ~2027-02-28 — bump `updated` when the AI-use
+reality changes, or expect the ai-use check to go red then.
 
 ## Cron auto-disable watch (public repos)
 

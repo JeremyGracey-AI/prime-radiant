@@ -36,3 +36,22 @@ class TestLoadTargetData:
     def test_values_non_negative(self) -> None:
         frame = load_target_data(FIXTURE)
         assert (frame["value"] >= 0).all()
+
+
+class TestEnsureHubCloneGuard:
+    def test_missing_git_binary_fails_loudly_before_any_network(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        # container context: the image ships no git; a raw FileNotFoundError
+        # mid-subprocess (after attempting a network clone) is not an
+        # acceptable failure mode (adversarial finding)
+        from prime_radiant.epi.data import hub as hub_module
+
+        monkeypatch.setattr(hub_module.shutil, "which", lambda _: None)
+        monkeypatch.setattr(
+            hub_module.subprocess,
+            "run",
+            lambda *a, **k: pytest.fail("attempted subprocess/network before the guard"),
+        )
+        with pytest.raises(RuntimeError, match="mount"):
+            hub_module.ensure_hub_clone(tmp_path / "hub")

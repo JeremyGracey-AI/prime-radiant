@@ -84,6 +84,19 @@ dashboard = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/prime_radiant"]
 
+# Default hatchling sdists ship the entire working tree (NOTES, handoff briefs,
+# serve_data) — scope to the package + release-relevant files. LICENSE rides
+# along via the license-files mechanism.
+[tool.hatch.build.targets.sdist]
+only-include = [
+    "src/prime_radiant",
+    "psr_parser.py",
+    "README.md",
+    "CHANGELOG.md",
+    "CITATION.cff",
+    "uv.lock",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

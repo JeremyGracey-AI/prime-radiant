@@ -13,12 +13,12 @@ repos:
       - id: check-toml
       - id: check-yaml
       - id: end-of-file-fixer
-        exclude: ^(serve_data/|reports/|tests/golden/|tests/cassettes/)
+        exclude: ^(serve_data/|reports/|tests/golden/|tests/cassettes/|tests/fixtures/)
       - id: trailing-whitespace
-        exclude: ^(serve_data/|reports/|tests/golden/|tests/cassettes/)
+        exclude: ^(serve_data/|reports/|tests/golden/|tests/cassettes/|tests/fixtures/)
       - id: mixed-line-ending
         args: [--fix=lf]
-        exclude: ^(serve_data/|reports/|tests/golden/|tests/cassettes/)
+        exclude: ^(serve_data/|reports/|tests/golden/|tests/cassettes/|tests/fixtures/)
 
   # ruff-check must run BEFORE ruff-format: the `I` rules sort imports, and
   # the formatter then normalises the result (agent-lab precedent).
@@ -48,7 +48,7 @@ repos:
     hooks:
       - id: pyright
         name: pyright (uv)
-        entry: bash -c 'uv run --frozen python -c "import gradio" && uv run --frozen pyright'
+        entry: bash -c 'uv run --frozen --all-groups python -c "import gradio" && uv run --frozen --all-groups pyright'
         language: system
         types_or: [python, pyi]
         pass_filenames: false

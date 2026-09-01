@@ -52,6 +52,43 @@ class TestEveryNewWorkflow:
     def test_no_cron_trigger(self, name: str) -> None:
         assert "schedule" not in _load(name)[True], name
 
+    def test_trigger_sets_are_locked_exactly(self, name: str) -> None:
+        # pull_request_target (the pwn-request vector) or any other trigger
+        # must not appear silently (adversarial finding, mutant M1)
+        expected = {
+            "ci.yml": {"push", "pull_request", "workflow_dispatch"},
+            "release.yml": {"workflow_dispatch"},
+            "publish.yml": {"push", "workflow_dispatch"},
+            "docs.yml": {"push", "workflow_dispatch"},
+            "ai-use.yml": {"push", "pull_request"},
+        }
+        assert set(_load(name)[True].keys()) == expected[name]
+
+    def test_job_permissions_are_allowlisted(self, name: str) -> None:
+        # every job-level permissions block must match the explicit allowlist —
+        # an escalation on any other job must fail loudly (mutant M3)
+        allowed = {
+            ("ci.yml", "test"): {"contents": "read", "id-token": "write"},
+            ("release.yml", "release"): {"contents": "write"},
+            ("publish.yml", "publish"): {"id-token": "write"},
+            ("docs.yml", "deploy"): {"pages": "write", "id-token": "write"},
+        }
+        for job_name, job in _load(name)["jobs"].items():
+            if "permissions" in job:
+                assert job["permissions"] == allowed[(name, job_name)], f"{name}:{job_name}"
+
+    def test_concurrency_cancellation_is_deliberate(self, name: str) -> None:
+        # deploy/release-shaped workflows must never cancel in flight; the
+        # test-shaped ones deliberately do (mutant M4)
+        cancel = {
+            "ci.yml": True,
+            "release.yml": False,
+            "publish.yml": False,
+            "docs.yml": False,
+            "ai-use.yml": True,
+        }
+        assert _load(name)["concurrency"]["cancel-in-progress"] is cancel[name], name
+
 
 class TestCiWorkflow:
     def test_matrix_covers_supported_pythons(self) -> None:
@@ -70,10 +107,18 @@ class TestCiWorkflow:
         steps = _load("ci.yml")["jobs"]["test"]["steps"]
         codecov = [s for s in steps if str(s.get("uses", "")).startswith("codecov/")]
         assert len(codecov) == 1
+        # dependabot clause: dependabot-triggered runs get a read-only token
+        # (id-token silently dropped) and getIDToken would fail the job on
+        # every dependabot PR post-flip (adversarial finding, HIGH)
         assert codecov[0]["if"] == (
             "matrix.python-version == '3.12' && github.event.repository.private == false"
+            " && github.actor != 'dependabot[bot]'"
         )
         assert codecov[0]["with"]["use_oidc"] is True
+        assert codecov[0]["with"]["files"] == "coverage.xml"
+        assert codecov[0]["with"]["fail_ci_if_error"] is True  # silent-vanish guard
+        runs = "\n".join(step.get("run", "") for step in steps)
+        assert "--cov-report=xml" in runs  # the file codecov uploads (mutant M5)
         # OIDC needs id-token on the job; nothing beyond read+id-token allowed
         assert _load("ci.yml")["jobs"]["test"]["permissions"] == {
             "contents": "read",
@@ -91,6 +136,9 @@ class TestCiWorkflow:
         runs = "\n".join(step.get("run", "") for step in _load("ci.yml")["jobs"]["docker"]["steps"])
         assert "docker build" in runs
         assert "docker run --rm" in runs
+        # --help never imports lightgbm; only a real import proves libgomp1
+        # actually loads in the image (adversarial finding)
+        assert "import lightgbm" in runs
 
     def test_docs_build_is_strict(self) -> None:
         runs = "\n".join(
@@ -113,7 +161,20 @@ class TestReleaseWorkflow:
         runs = "\n".join(
             step.get("run", "") for step in _load("release.yml")["jobs"]["release"]["steps"]
         )
-        assert "python-semantic-release==10.6.2" in runs
+        # universality, not presence: BOTH the noop and the live branch must
+        # run the pinned version (surviving-mutant finding: unpinning only the
+        # live branch passed a presence check)
+        import re as _re
+
+        invocations = _re.findall(r"python-semantic-release\S*", runs)
+        assert len(invocations) == 2
+        assert all(inv == "python-semantic-release==10.6.2" for inv in invocations)
+
+    def test_release_checkout_fetches_full_history(self) -> None:
+        # psr computes versions from the full history + tags; a depth-1 clone
+        # mis-computes silently once tags exist (mutant M2)
+        checkout = _load("release.yml")["jobs"]["release"]["steps"][0]
+        assert checkout["with"] == {"fetch-depth": 0, "persist-credentials": False}
 
     def test_noop_input_defaults_to_dry_run(self) -> None:
         inputs = _load("release.yml")[True]["workflow_dispatch"]["inputs"]
@@ -139,6 +200,9 @@ class TestPublishWorkflow:
         assert job["needs"] == "build"
         assert job["environment"]["name"] == "pypi"
         assert job["permissions"] == {"id-token": "write"}
+        # a pre-flip publish would ship the sdist publicly while the repo is
+        # private — same public gate as codecov/docs (adversarial finding)
+        assert job["if"] == "github.event.repository.private == false"
         uses = [str(step.get("uses", "")) for step in job["steps"]]
         assert any(entry.startswith("pypa/gh-action-pypi-publish@") for entry in uses)
         assert not any(entry.startswith("actions/checkout@") for entry in uses)
@@ -151,6 +215,22 @@ class TestDocsWorkflow:
         assert job["needs"] == "build"
         assert job["permissions"] == {"pages": "write", "id-token": "write"}
         assert job["environment"]["name"] == "github-pages"
+
+
+class TestDependabotConfig:
+    def test_all_four_ecosystems_with_the_python_ignore(self) -> None:
+        # the freshness claim rests on this config; it had zero guards
+        # (surviving mutant l)
+        config = yaml.safe_load((WORKFLOWS.parent / "dependabot.yml").read_text())
+        ecosystems = {u["package-ecosystem"] for u in config["updates"]}
+        assert ecosystems == {"github-actions", "uv", "pre-commit", "docker"}
+        docker = next(u for u in config["updates"] if u["package-ecosystem"] == "docker")
+        ignored = docker["ignore"][0]
+        assert ignored["dependency-name"] == "python"
+        assert set(ignored["update-types"]) == {
+            "version-update:semver-major",
+            "version-update:semver-minor",
+        }
 
 
 class TestAiUseWorkflow:
