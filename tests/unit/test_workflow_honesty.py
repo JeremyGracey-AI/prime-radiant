@@ -37,8 +37,14 @@ class TestWorkflowHonesty:
             assert "timeout-minutes" in job, f"job {name} lacks timeout-minutes"
 
     def test_cron_cannot_reach_the_live_job(self, workflow: dict) -> None:
+        # EXACT conjunction, not substrings: a mutant appending
+        # "|| github.event_name == 'schedule'" passed the old substring checks
+        # under &&-over-|| precedence (adversarial finding).
         condition = workflow["jobs"]["live-submit"]["if"]
-        assert "github.event_name == 'workflow_dispatch'" in condition
+        assert condition == (
+            "github.event_name == 'workflow_dispatch' && inputs.live == true && vars.LIVE == '1'"
+        )
+        assert "||" not in condition
 
     def test_live_job_carries_all_three_gates(self, workflow: dict) -> None:
         condition = workflow["jobs"]["live-submit"]["if"]
@@ -51,6 +57,18 @@ class TestWorkflowHonesty:
     def test_live_pr_step_fails_loudly_rather_than_pretending(self, workflow: dict) -> None:
         pr_step = workflow["jobs"]["live-submit"]["steps"][-1]
         assert "exit 1" in pr_step["run"]  # unimplemented until go-live, and says so
+
+    def test_no_expression_interpolation_in_run_blocks(self, workflow: dict) -> None:
+        # Script-injection hardening: workflow_dispatch inputs must reach shell
+        # via env indirection, never direct ${{ }} interpolation in run:.
+        for job in workflow["jobs"].values():
+            for step in job.get("steps", []):
+                if "run" in step:
+                    assert "${{" not in step["run"], step.get("name", "unnamed step")
+
+    def test_checkout_does_not_persist_credentials(self, workflow: dict) -> None:
+        checkout = workflow["jobs"]["dry-run"]["steps"][0]
+        assert checkout["with"]["persist-credentials"] is False
 
     def test_dry_run_uploads_artifact_or_fails(self, workflow: dict) -> None:
         upload = workflow["jobs"]["dry-run"]["steps"][-1]

@@ -109,6 +109,16 @@ class TestValidateSubmission:
         with pytest.raises(SubmissionInvalidError, match="population"):
             validate_submission(frame, TASKS_JSON, locations_csv=locations)
 
+    def test_value_exactly_at_population_fails(self) -> None:
+        # hubValidations source: `value < popn` — equality is a breach. The >=
+        # boundary was untested (the >-mutant survived; adversarial finding).
+        locations = Path(__file__).parent.parent / "fixtures" / "locations.csv"
+        frame = build_submission_frame(_model_quantiles(), REFERENCE_DATE)
+        ca_rows = frame.index[frame["location"] == "06"]
+        frame.loc[ca_rows[-1], "value"] = 39_431_263  # exactly CA's fixture population
+        with pytest.raises(SubmissionInvalidError, match="population"):
+            validate_submission(frame, TASKS_JSON, locations_csv=locations)
+
     def test_population_check_passes_for_sane_values(self) -> None:
         locations = Path(__file__).parent.parent / "fixtures" / "locations.csv"
         frame = build_submission_frame(_model_quantiles(), REFERENCE_DATE)

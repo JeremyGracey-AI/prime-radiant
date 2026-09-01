@@ -35,13 +35,18 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
       - name: Sync environment
         run: uv sync --all-groups
       - name: Clone FluSight hub (blobless + sparse)
         run: uv run python -c "from pathlib import Path; from prime_radiant.epi.data.hub import ensure_hub_clone; ensure_hub_clone(Path('data/hub'))"
       - name: Forecast (dry run)
-        run: uv run prime-radiant epi forecast --reference-date "${{ inputs.reference_date != '' && inputs.reference_date || 'auto' }}" --out model-output
+        env:
+          # env indirection: dispatch inputs never interpolate into shell
+          REF_DATE: ${{ inputs.reference_date }}
+        run: uv run prime-radiant epi forecast --reference-date "${REF_DATE:-auto}" --out model-output
       - name: Validate submission file
         run: |
           file=$(ls model-output/*.csv | head -1)

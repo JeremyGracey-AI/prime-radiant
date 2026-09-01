@@ -37,6 +37,11 @@ def write_submission_csv(
 ) -> Path:
     from typing import cast
 
+    unique_dates = pd.to_datetime(frame["reference_date"]).nunique()
+    if unique_dates != 1:
+        # one file = one round; row-0-derived naming over a mixed frame would
+        # silently mislabel other rounds (adversarial latent-edge finding)
+        raise ValueError(f"frame carries {unique_dates} reference_dates; expected exactly 1")
     first = pd.Timestamp(frame["reference_date"].iloc[0])
     assert not pd.isna(first)  # SubmissionSchema guarantees a real date
     reference_date = cast(date, first.date())  # stubs keep NaTType in the union

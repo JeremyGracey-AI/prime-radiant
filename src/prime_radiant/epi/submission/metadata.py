@@ -42,7 +42,9 @@ _METHODS_LONG = (
 
 def render_model_metadata(pyproject_path: Path | None = None) -> str:
     if pyproject_path is None:
-        pyproject_path = Path(__file__).parents[4].parent / "pyproject.toml"
+        # parents[4] IS the repo root (submission->epi->prime_radiant->src->root);
+        # the old .parent overshoot made this read dead code (adversarial finding).
+        pyproject_path = Path(__file__).parents[4] / "pyproject.toml"
     try:
         project = tomllib.loads(pyproject_path.read_text())["project"]
         repo_url = project["urls"]["Repository"]

@@ -59,6 +59,28 @@ class TestWriteSubmissionCsv:
         assert fields[6] == "0.01"  # level as plain decimal string, not 1e-02
         assert "." not in fields[7]  # integer value, no float suffix
 
+    def test_float_typed_input_still_writes_integers(self, tmp_path: Path) -> None:
+        # The astype(int) mutant survived because fixtures were pre-int64 via
+        # the schema (adversarial finding). Feed a RAW float frame directly.
+        frame = _frame().astype({"value": float})
+        frame["value"] = frame["value"] + 0.0  # explicitly float64
+        path = write_submission_csv(frame, tmp_path, "JGracey", "prime_radiant")
+        values = [line.split(",")[7] for line in path.read_text().splitlines()[1:]]
+        assert all("." not in v for v in values), values[:3]
+
+    def test_rejects_multi_reference_date_frames(self, tmp_path: Path) -> None:
+        import pandas as pd
+
+        from datetime import date as date_type
+
+        second = _frame().assign(
+            reference_date=pd.Timestamp("2024-11-30"),
+            target_end_date=lambda f: f["target_end_date"] + pd.Timedelta(days=7),
+        )
+        mixed = pd.concat([_frame(), second], ignore_index=True)
+        with pytest.raises(ValueError, match="reference_dates"):
+            write_submission_csv(mixed, tmp_path, "JGracey", "prime_radiant")
+
     def test_no_index_column(self, tmp_path: Path) -> None:
         path = write_submission_csv(_frame(), tmp_path, "JGracey", "prime_radiant")
         assert not path.read_text().startswith(",")
