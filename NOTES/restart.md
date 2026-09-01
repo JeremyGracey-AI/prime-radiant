@@ -55,6 +55,7 @@ YAML. Done = CI dry run emits a validating file; PR step skipped without LIVE.
 
 ## Next step
 
+Read HANDOFF_PHASES_FG.md (committed this session) and start Phase F there.
 Phase F (dashboard): Gradio app — US choropleth of predicted 3-week change,
 per-state fan chart with observed history, reliability plot, model-vs-baseline
 table; space-deploy.yml pushes to HF Space jeremygracey-ai/prime-radiant
