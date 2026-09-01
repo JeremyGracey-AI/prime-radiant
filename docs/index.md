@@ -15,6 +15,8 @@ Calibrated forecasting. Two threads share this repo and a calibration thesis:
   curves, league tables, all served from a frozen, byte-regenerable bundle.
 - **[Model card](model-card.md)** — architecture, data, honest evaluation
   (including the seasons it loses and the under-coverage debt).
+- **[The Prime Radiant Record (PDF)](prime-radiant-record.pdf)** — the complete
+  build write-up: eight phases, the gate chain, and the adversarial ledger.
 - [Repository](https://github.com/JeremyGracey-AI/prime-radiant) —
   README carries the three-season league tables;
   [CONTRIBUTING](https://github.com/JeremyGracey-AI/prime-radiant/blob/master/CONTRIBUTING.md)

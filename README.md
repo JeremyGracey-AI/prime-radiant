@@ -8,6 +8,10 @@
 [![PyPI](https://img.shields.io/pypi/v/prime-radiant)](https://pypi.org/project/prime-radiant/)
 [![codecov](https://codecov.io/gh/JeremyGracey-AI/prime-radiant/branch/master/graph/badge.svg)](https://app.codecov.io/github/JeremyGracey-AI/prime-radiant)
 
+**📜 The full build record** — how this repo went from empty to registered, public,
+and live in three days, with the complete adversarial ledger:
+**[The Prime Radiant Record (PDF)](docs/prime-radiant-record.pdf)**
+
 Calibrated forecasting, measured honestly. Two threads share this repo:
 
 - **FluSight epi forecaster** (`prime_radiant.epi`) — CDC FluSight-format quantile
