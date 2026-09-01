@@ -18,22 +18,25 @@ history is the vintage store); scored against final truth as of 2026-07-09,
 horizons 0-3, all 53 jurisdictions. `wis_rel` = mean WIS relative to the official
 FluSight-baseline on the common task set across all six models (lower is better;
 the official "scaled relative skill" collapses to this ratio on identical sets).
+Coverage columns are computed on each model's full scored set; relative-skill
+columns on the common set — `n` and `n_relative` in the CSVs disclose both.
 
-**2025-26** — our model leads the table:
+**2025-26** — our model leads the table on the natural scale (on the log(x+1)
+scale UMass-flusion edges it, 0.583 vs 0.585 — both columns are in the CSVs):
 
 | model | wis_rel | 50% cov | 95% cov |
 |---|---|---|---|
 | **prime-radiant-lgbm** | **0.609** | 0.398 | 0.818 |
 | UMass-flusion | 0.625 | 0.353 | 0.823 |
-| FluSight-ensemble | 0.666 | 0.526 | 0.904 |
-| prime-radiant-ensemble | 0.764 | 0.465 | 0.880 |
-| FluSight-baseline | 1.000 | 0.434 | 0.864 |
+| FluSight-ensemble | 0.666 | 0.526 | 0.903 |
+| prime-radiant-ensemble | 0.764 | 0.464 | 0.880 |
+| FluSight-baseline | 1.000 | 0.433 | 0.864 |
 
 **2024-25** — the multi-model ensembles beat us; we beat the baseline:
 
 | model | wis_rel | 50% cov | 95% cov |
 |---|---|---|---|
-| UMass-flusion | 0.669 | 0.398 | 0.820 |
+| UMass-flusion | 0.669 | 0.397 | 0.820 |
 | FluSight-ensemble | 0.675 | 0.519 | 0.818 |
 | **prime-radiant-lgbm** | **0.796** | 0.338 | 0.738 |
 | prime-radiant-ensemble | 0.900 | 0.371 | 0.744 |
@@ -56,11 +59,13 @@ Full tables (per-horizon rows, log-scale variants, AE-median, task counts):
 
 ## Honest framing
 
-- **The backtest is biased against us, and we keep it that way.** Adversarial
+- **The backtest is net biased against us, and we keep it that way.** Adversarial
   verification proved that on three 2024-25 holiday weeks the official baseline's
   run saw data committed Thursday+, which our live-Wednesday vintage discipline
   refuses; on the 24 information-equal origins our relative WIS improves (lgbm
-  ~0.73). One 2023-24 origin (2024-04-13) had a week-stale vintage for everyone.
+  ~0.73). It is not one-way: at three October-2023 origins our vintages were
+  fresher than what the official run used. One 2023-24 origin (2024-04-13) had a
+  week-stale vintage — for our models only; the officials ran on fresh data there.
 - **Our intervals are too narrow.** The lgbm's 50% intervals cover 34-40% and its
   95% intervals 74-83% — under-dispersed, visible in the calibration curves.
   FluSight-ensemble is better calibrated even where we beat it on WIS. This is
@@ -69,10 +74,13 @@ Full tables (per-horizon rows, log-scale variants, AE-median, task counts):
 - **Wins and losses both stand.** We lead 2025-26 outright; UMass-flusion beats
   us clearly in 2023-24 and 2024-25. The 2023-24 lgbm ran on ~1.2 seasons of
   training history.
-- **The scorer and baseline replica are self-validating**: the replica reproduces
-  the official baseline's output to relative WIS 0.99999 when fed
-  fingerprint-matched vintages (Phase B), so the measuring stick is trusted
-  before any model is measured with it.
+- **The scorer and baseline replica are self-validating — for the season they
+  were validated on.** The replica reproduces the official 2024-25 baseline to
+  relative WIS 0.99999 on fingerprint-matched vintages (Phase B). In 2023-24 the
+  replica scores 0.976 vs the official baseline — a spread-construction
+  divergence at matched anchors that Phase B's validation (2024-25-era official
+  code) does not cover; adversarially checked: substituting the actual official
+  baseline into our ensemble changes no table ordering.
 
 ## Methodology in one paragraph
 

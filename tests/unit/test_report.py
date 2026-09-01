@@ -38,12 +38,14 @@ def _forecast_frame(shift: float = 0.0) -> pd.DataFrame:
 
 
 def _truth() -> pd.DataFrame:
-    # First observation inside the (10,20) interval, second far outside.
+    # First observation (16) inside the (10,20) interval, second far outside.
+    # 16, not the median 15: an exact-median observation makes ae_median 0 and
+    # the baseline-relative ae column 0/0.
     return pd.DataFrame(
         {
             "date": [pd.Timestamp("2025-12-06"), pd.Timestamp("2025-12-13")],
             "location": ["US", "US"],
-            "value": [15.0, 100.0],
+            "value": [16.0, 100.0],
         }
     )
 
@@ -60,18 +62,41 @@ class TestCoverageCurve:
 
 class TestLeagueRows:
     def test_relative_skill_on_common_tasks(self) -> None:
+        # DIVERGENT task sets: the mutant that deleted the intersection logic
+        # SURVIVED the old identical-set fixture (adversarial finding). Here the
+        # baseline covers two tasks but our model only the first, so relative
+        # columns MUST be computed on the 1-task intersection.
         truth = _truth()
+        partial = _forecast_frame(shift=5.0)
+        partial = partial.loc[partial["target_end_date"] == pd.Timestamp("2025-12-06")]
         frames = {
             "FluSight-baseline": _forecast_frame(),
-            "our-model": _forecast_frame(shift=5.0),  # different scores
+            "our-model": partial,
         }
         rows = league_rows(frames, truth, season="2025-26", truth_as_of="2026-07-09")
         table = rows.set_index(["model_id", "horizon"])
         base = table.loc[("FluSight-baseline", "all")]
         ours = table.loc[("our-model", "all")]
-        assert base["wis_scaled_relative_skill"] == pytest.approx(1.0)
-        assert ours["wis_scaled_relative_skill"] == pytest.approx(ours["wis"] / base["wis"])
         assert base["n"] == 2
+        assert base["n_relative"] == 1  # shrunk to the intersection
+        assert int(ours["n"]) == int(ours["n_relative"]) == 1
+        assert base["wis_scaled_relative_skill"] == pytest.approx(1.0)
+
+        # expected ratio on the intersection ONLY (task 2025-12-06): recompute
+        # both models' single-task wis independently via league_rows on a truth
+        # frame restricted to that task
+        restricted_truth = truth.loc[truth["date"] == pd.Timestamp("2025-12-06")]
+        single = league_rows(frames, restricted_truth, season="s", truth_as_of="x").set_index(
+            ["model_id", "horizon"]
+        )
+        expected_ratio = (
+            single.loc[("our-model", "all"), "wis"]
+            / single.loc[("FluSight-baseline", "all"), "wis"]
+        )
+        assert ours["wis_scaled_relative_skill"] == pytest.approx(expected_ratio)
+        # the deleted-intersection mutant reports ours_full_wis / base_full_wis,
+        # which differs because the baseline's FULL set includes the second task
+        assert ours["wis_scaled_relative_skill"] != pytest.approx(ours["wis"] / base["wis"])
         assert set(rows["truth_as_of"]) == {"2026-07-09"}
 
     def test_log_columns_present_and_distinct(self) -> None:
@@ -89,4 +114,18 @@ class TestRenderCalibrationPng:
         out = tmp_path / "calibration.png"
         render_calibration_png(curves, by_horizon, out)
         assert out.exists()
-        assert out.stat().st_size > 10_000
+        # The old >10KB bar was vacuous — an EMPTY figure exceeds it (adversarial
+        # finding; ~47KB measured). Honest unit check: render an empty figure at
+        # the same geometry and require the real one to carry more ink. The
+        # integration test holds the full-data plot to an absolute 150KB bar.
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        fig, _axes = plt.subplots(2, 2, figsize=(11, 9.2))
+        empty = tmp_path / "empty.png"
+        fig.tight_layout()
+        fig.savefig(empty, dpi=150)
+        plt.close(fig)
+        assert out.stat().st_size > 1.2 * empty.stat().st_size

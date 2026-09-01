@@ -29,5 +29,6 @@ def test_committed_reports_regenerate_exactly(tmp_path: Path) -> None:
 
     png = tmp_path / "calibration.png"
     assert png.exists()
-    assert png.stat().st_size > 10_000
-    assert (REPORTS_DIR / "calibration.png").stat().st_size > 10_000
+    # empty-axes figures weigh ~47KB at this size/dpi; 150KB requires real content
+    assert png.stat().st_size > 150_000
+    assert (REPORTS_DIR / "calibration.png").stat().st_size > 150_000

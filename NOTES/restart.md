@@ -33,7 +33,25 @@ Done = reports/backtest_<season>.csv + reports/calibration.png committed.
 - done: README rewritten — results tables, calibration image, honest framing,
   methodology paragraph, limitations. Claude Code named.
 - 159 offline tests (cov 96.04%) + 7 integration green.
-- NOT yet run: Phase D adversarial workflow (next before declaring done).
+- done: Phase D adversarial workflow (4 agents). League numbers reproduced
+  independently to 5e-7 across all 90 rows; gates clean. Fixed from findings:
+  CSV row order was lexicographic-on-wis-as-string (now numeric within horizon;
+  values unchanged); the intersection unit test was vacuous on identical-set
+  fixtures (now divergent sets — the deleted-intersection mutant dies); PNG size
+  bars were vacuous (>10KB when empty figures weigh ~47KB; now dynamic-empty
+  baseline in unit, 150KB absolute in integration); README: 4 double-rounded
+  coverage cells corrected, "for everyone" staleness claim corrected (hit only
+  our models), "biased against us" softened to net-biased (Oct-2023 origins ran
+  in our favor), measuring-stick claim scoped to the validated season, log-scale
+  2025-26 caveat added (UMass edges lgbm on the log column, 0.583 vs 0.585).
+- **Replica divergence revisit (promised in Phase B notes, now recorded):** in
+  2023-24 the replica scores 0.976 vs the official baseline. Refuter decomposed:
+  at the 26/30 matched-anchor origins the replica's SPREAD is wider (dispersion
+  14.78 vs 12.16) and outscores official 0.9737; the 4 divergent-data origins net
+  1.0153 against it. Neither documented Phase B divergence explains it — likely
+  the official 2023-24 baseline ran different-era code (Phase B validated against
+  the 2024-25 script). Counterfactual verified: swapping the actual official
+  baseline into our ensemble changes no table ordering. Open question parked.
 
 ## Next step
 

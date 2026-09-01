@@ -264,7 +264,13 @@ def build_reports(  # pragma: no cover — orchestration over IO; integration-te
     for season in SEASONS:
         frames = season_forecast_frames(season, backtest_dir, benchmark_cache)
         rows = league_rows(frames, truth, season, TRUTH_AS_OF.isoformat())
-        rows = rows.sort_values(["horizon", "wis"], key=lambda s: s.astype(str))
+        # horizon compares as string (mixed int/"all"); wis must sort NUMERICALLY —
+        # the old single-key string sort ranked rows lexicographically (refuted).
+        rows = (
+            rows.assign(_horizon_key=rows["horizon"].astype(str))
+            .sort_values(["_horizon_key", "wis"])
+            .drop(columns="_horizon_key")
+        )
         rows.to_csv(reports_dir / f"backtest_{season}.csv", index=False, float_format="%.6f")
 
         season_curves[season] = {
