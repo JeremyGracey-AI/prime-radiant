@@ -61,7 +61,10 @@ Jeremy's explicit go, exactly like the hub steps above.
    2026-07-09). For a live 2026-27 season the weekly workflow must be chained to
    rebuild/refresh `serve_data/` and re-dispatch the deploy — NOT wired yet, by
    design; decide at hub go-live. CPU-basic Spaces sleep after a fixed 48h idle;
-   first visitor wakes them.
+   first visitor wakes them. Caution (refuter-noted): after go-live, RE-RUNNING
+   an old `deploy=true` workflow run re-evaluates vars at re-run time and would
+   redeploy that run's STALE staged artifact — always dispatch fresh, never
+   re-run.
 
 ## Standing cautions
 

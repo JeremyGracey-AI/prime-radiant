@@ -39,17 +39,41 @@ outward steps).
   deploy=true + SPACE_LIVE=1 var + HF_TOKEN secret, all absent today) and
   pushes only the validated stage artifact (no checkout in deploy job).
   test_space_deploy_honesty.py asserts the gates as exact conjunctions.
-- Gates: `make check` green (234 offline, cov 95.95%) · `make test-integration`
-  green (11, incl. bundle byte-regen, vintage-sha pin, cache==S3 enumeration).
-- NOT done (needs Jeremy's explicit go — runbook "Dashboard go-live"): create
-  Space (PRO account verified), fine-grained HF_TOKEN secret, SPACE_LIVE=1,
-  dispatch deploy, verify live. Adversarial workflow + walkthrough page pending
-  this session.
+- done: 4-agent adversarial workflow (commit 9059713). Verdicts: vintage
+  SURVIVED, gates SURVIVED (live GitHub state: 0 vars, 0 secrets, 0 envs,
+  sole admin; SHA pins genuine; no reachability bypass constructed), app
+  SURVIVED (all 53 locations x 3 models exercised), mutations PARTIALLY
+  REFUTED — 9/9 mutants RAN and were killed. Six findings fixed in 6b6e1f0
+  with attack-derived regression tests: fresh-clone make check (gradio .pyi
+  stubs generated at first import — typecheck now imports gradio first), NaN
+  anchor fallback + loud unanchored-location error, gap-only fan prepend
+  (53/53 duplicated x before), PR excluded from choropleth (held the invisible
+  z-max in 2/3 models), deploy job repo_info pre-check (hf upload silently
+  CREATEs a missing Space with a broad token), US+72 in the synthetic fixture
+  (unit-level mutant kill) + tightened honesty tests.
+- Gates: `make check` green (238 offline, cov 95.95%) · `make test-integration`
+  green pre-hardening (11: byte-regen, vintage-sha pin, cache==S3 enumeration);
+  the hardening commit touched no src/prime_radiant path, so that run stands.
+- Accepted residuals (stated, not fixed): duplicate (location,date) truth rows
+  would give an order-dependent anchor — guarded by absence (0 duplicates in
+  the shipped truth), no code guard; deploy job goes green-with-steps-skipped
+  when HF_TOKEN is absent (matches the weekly-forecast house pattern);
+  re-running an old deploy run post-go-live redeploys its stale artifact
+  (recorded in the runbook staleness note); `pip install → hf` on the runner
+  PATH is verified locally, untested until the first real dispatch; DC's
+  visual rendering on the choropleth is confirmed programmatically (in trace
+  locations) but eyeballed only on the walkthrough page, not on a live Space.
+- NOT done (needs Jeremy's explicit go — runbook "Dashboard go-live" steps
+  1-5): create Space (PRO verified), fine-grained HF_TOKEN secret,
+  SPACE_LIVE=1, dispatch deploy, verify live. The handoff's done condition
+  ("Space live on CPU-basic") is deliberately NOT met without that go.
 
 ## Next step
 
-4-agent adversarial workflow on the Phase F commit; fix findings with
-attack-derived regression tests; walkthrough page; then STOP for the go.
+Jeremy's go/no-go on the Dashboard go-live runbook steps 1-5. If go: execute
+them in-session and verify the Space boots. If no-go: Phase F closes
+deploy-ready; next session starts Phase G (release hardening) per
+HANDOFF_PHASES_FG.md — one phase per session, plan-mode recon workflow first.
 
 ## Verify
 
