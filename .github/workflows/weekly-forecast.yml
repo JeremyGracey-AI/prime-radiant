@@ -1,0 +1,80 @@
+# Weekly FluSight forecast: dry-run by default, always.
+#
+# The live path CANNOT fire from cron: it requires a manual workflow_dispatch
+# with live=true, AND repo variable LIVE == '1', AND the FLUSIGHT_HUB_PAT secret
+# (which does not exist until go-live). Enforcement is structural, not prose.
+# Cron minute is off-hour (GitHub top-of-the-hour congestion guidance); the
+# brief's "Tue 22:00 UTC" is Tue 22:17 UTC in practice.
+
+name: weekly-forecast
+
+on:
+  schedule:
+    - cron: "17 22 * * 2"
+  workflow_dispatch:
+    inputs:
+      reference_date:
+        description: "Reference date (YYYY-MM-DD) or empty for auto"
+        type: string
+        default: ""
+      live:
+        description: "Open the hub PR (requires LIVE=1 repo var + PAT secret + explicit go)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+      - name: Sync environment
+        run: uv sync --all-groups
+      - name: Clone FluSight hub (blobless + sparse)
+        run: uv run python -c "from pathlib import Path; from prime_radiant.epi.data.hub import ensure_hub_clone; ensure_hub_clone(Path('data/hub'))"
+      - name: Forecast (dry run)
+        run: uv run prime-radiant epi forecast --reference-date "${{ inputs.reference_date != '' && inputs.reference_date || 'auto' }}" --out model-output
+      - name: Validate submission file
+        run: |
+          file=$(ls model-output/*.csv | head -1)
+          uv run prime-radiant epi validate "$file"
+      - name: Upload submission artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: submission
+          path: model-output/*.csv
+          if-no-files-found: error
+
+  live-submit:
+    # ALL THREE gates: manual dispatch with live=true, repo variable LIVE=1,
+    # and the PAT secret present (checked at step level — the secrets context
+    # is unavailable in `if:`). Cron can never reach this job.
+    needs: dry-run
+    if: github.event_name == 'workflow_dispatch' && inputs.live == true && vars.LIVE == '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      HUB_PAT: ${{ secrets.FLUSIGHT_HUB_PAT }}
+    steps:
+      - name: Announce intent (audit trail before any side effect)
+        if: env.HUB_PAT != ''
+        run: |
+          echo "LIVE SUBMISSION INTENT:"
+          echo "  upstream: cdcepi/FluSight-forecast-hub (base: main)"
+          echo "  fork:     JeremyGracey-AI/FluSight-forecast-hub"
+          echo "  file:     model-output/JGracey-prime_radiant/<reference_date>-JGracey-prime_radiant.csv"
+          echo "This step only ECHOES today; the PR step below is the side effect."
+      - name: Open hub PR
+        if: env.HUB_PAT != ''
+        run: |
+          echo "NOT IMPLEMENTED until go-live: requires fork + registered metadata."
+          echo "See NOTES/go-live-runbook.md. Failing loudly rather than pretending."
+          exit 1

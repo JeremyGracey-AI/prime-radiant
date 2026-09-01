@@ -3,6 +3,7 @@
 
 # Data and run artifacts — root-anchored: src/prime_radiant/epi/data is CODE
 /data/
+/model-output/
 *.duckdb
 logs/
 .coverage

@@ -11,6 +11,7 @@ from pathlib import Path
 import pandas as pd
 import pandera.errors
 
+from prime_radiant.epi.data.locations import load_locations
 from prime_radiant.epi.schemas import SubmissionSchema
 from prime_radiant.epi.submission.format import PRIMARY_TARGET
 
@@ -36,7 +37,9 @@ def _allowed(task: dict, task_id: str) -> set:
     return set((ids.get("required") or []) + (ids.get("optional") or []))
 
 
-def validate_submission(frame: pd.DataFrame, tasks_json_path: Path) -> None:
+def validate_submission(
+    frame: pd.DataFrame, tasks_json_path: Path, locations_csv: Path | None = None
+) -> None:
     task = _primary_task(tasks_json_path)
 
     allowed_dates = _allowed(task, "reference_date")
@@ -67,6 +70,22 @@ def validate_submission(frame: pd.DataFrame, tasks_json_path: Path) -> None:
 
     if unknown_horizons := set(frame["horizon"]) - _allowed(task, "horizon"):
         raise SubmissionInvalidError(f"horizon(s) not in hub contract: {sorted(unknown_horizons)}")
+
+    if locations_csv is not None:
+        # The hub's validations.yml runs a custom counts_lt_popn check: count
+        # values must sit below the location's population (auxiliary-data).
+        locations_frame = load_locations(locations_csv)
+        populations = pd.Series(
+            locations_frame["population"].to_numpy(float),
+            index=pd.Index(locations_frame["location"]),
+        )
+        limits = populations.reindex(frame["location"]).to_numpy(float)
+        breaches = frame.loc[frame["value"].to_numpy() >= limits]
+        if not breaches.empty:
+            rows = breaches.loc[:, ["location", "value"]].head(3).to_dict("records")
+            raise SubmissionInvalidError(
+                f"value(s) at or above location population (counts_lt_popn): {rows}"
+            )
 
     try:
         SubmissionSchema.validate(frame)

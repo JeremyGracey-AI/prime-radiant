@@ -98,6 +98,22 @@ class TestValidateSubmission:
         with pytest.raises(SubmissionInvalidError):
             validate_submission(frame, drifted)
 
+    def test_counts_must_be_below_population(self) -> None:
+        # The hub's own validations.yml runs a custom counts_lt_popn check we
+        # lacked (adversarial recon finding). California's population is ~39M;
+        # a 50M admissions count must fail.
+        locations = Path(__file__).parent.parent / "fixtures" / "locations.csv"
+        frame = build_submission_frame(_model_quantiles(), REFERENCE_DATE)
+        ca_rows = frame.index[frame["location"] == "06"]
+        frame.loc[ca_rows[-1], "value"] = 50_000_000  # CA pop ~39M
+        with pytest.raises(SubmissionInvalidError, match="population"):
+            validate_submission(frame, TASKS_JSON, locations_csv=locations)
+
+    def test_population_check_passes_for_sane_values(self) -> None:
+        locations = Path(__file__).parent.parent / "fixtures" / "locations.csv"
+        frame = build_submission_frame(_model_quantiles(), REFERENCE_DATE)
+        validate_submission(frame, TASKS_JSON, locations_csv=locations)
+
     def test_primary_target_found_in_any_round(self, tmp_path: Path) -> None:
         # The hub may reorganize rounds; the validator must search all of them.
         import json
