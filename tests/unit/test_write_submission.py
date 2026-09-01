@@ -69,10 +69,6 @@ class TestWriteSubmissionCsv:
         assert all("." not in v for v in values), values[:3]
 
     def test_rejects_multi_reference_date_frames(self, tmp_path: Path) -> None:
-        import pandas as pd
-
-        from datetime import date as date_type
-
         second = _frame().assign(
             reference_date=pd.Timestamp("2024-11-30"),
             target_end_date=lambda f: f["target_end_date"] + pd.Timedelta(days=7),
