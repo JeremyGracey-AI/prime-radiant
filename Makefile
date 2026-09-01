@@ -1,7 +1,7 @@
 # Target names follow house convention (nexus-neuromirror); commands are uv-based
 # per the newer governance-drift-researcher pattern.
 
-.PHONY: install-dev test lint typecheck check
+.PHONY: install-dev test lint typecheck check bundle
 
 install-dev:
 	uv sync --all-groups
@@ -22,3 +22,8 @@ typecheck:
 	uv run pyright
 
 check: lint typecheck test
+
+# Offline by construction: assembles serve_data/ from local backtest parquets,
+# the pinned truth vintage, and the local benchmark cache — never the network.
+bundle:
+	uv run prime-radiant epi bundle

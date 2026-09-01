@@ -1,0 +1,91 @@
+# Dashboard deploy to the HF Space: stage always, push only through the gates.
+#
+# The upload step is REAL (`hf upload`), but structurally inert until go-live:
+# it requires a manual workflow_dispatch with deploy=true, AND repo variable
+# SPACE_LIVE == '1', AND the HF_TOKEN secret — none of which exist until
+# Jeremy's explicit go (NOTES/go-live-runbook.md). The deploy job never checks
+# out the repo: it pushes exactly the artifact the stage job validated.
+#
+# The Space's requirements.txt is GENERATED here, not committed — the GitHub
+# repo carries no requirements*.txt (Phase G asserts that), and gradio is never
+# listed because the README front-matter sdk_version governs it.
+
+name: space-deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Push to the HF Space (requires SPACE_LIVE=1 repo var + HF_TOKEN secret + explicit go)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Assemble the Space tree
+        # Locked versions from uv.lock (plotly/pandas/pyarrow) so the Space
+        # resolves exactly what the panels were tested against.
+        run: |
+          mkdir -p space
+          cp dashboard/app.py dashboard/panel_data.py dashboard/panel_plots.py space/
+          cp dashboard/SPACE_README.md space/README.md
+          cp -R serve_data space/serve_data
+          printf 'plotly==6.9.0\npandas==3.0.5\npyarrow==25.0.1\n' > space/requirements.txt
+      - name: Validate staged front-matter and bundle
+        run: |
+          head -1 space/README.md | grep -qx -- '---'
+          grep -q '^sdk: gradio$' space/README.md
+          grep -q '^sdk_version: ' space/README.md
+          grep -q '^app_file: app.py$' space/README.md
+          test -f space/serve_data/manifest.json
+          test -f space/serve_data/truth.parquet
+      - name: Upload staged Space artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: space
+          path: space/
+          if-no-files-found: error
+
+  deploy:
+    # ALL THREE gates: manual dispatch with deploy=true, repo variable
+    # SPACE_LIVE=1, and the HF_TOKEN secret present (checked at step level —
+    # the secrets context is unavailable in `if:`).
+    needs: stage
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy == true && vars.SPACE_LIVE == '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    steps:
+      - name: Download the staged Space artifact
+        if: env.HF_TOKEN != ''
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: space
+          path: space
+      - name: Announce intent (audit trail before any side effect)
+        if: env.HF_TOKEN != ''
+        run: |
+          echo "SPACE DEPLOY INTENT:"
+          echo "  target: huggingface.co/spaces/jeremygracey-ai/prime-radiant"
+          echo "  source: the validated 'space' artifact from the stage job"
+          find space -type f | sort
+      - name: Upload to the Space
+        if: env.HF_TOKEN != ''
+        # EXACT pin: the `hf` CLI arg surface is what this step depends on.
+        run: |
+          pip install --quiet huggingface_hub==1.29.0
+          hf upload jeremygracey-ai/prime-radiant space . --repo-type space --commit-message "deploy from GitHub Actions"

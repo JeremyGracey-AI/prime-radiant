@@ -51,3 +51,30 @@ class TestAutoReferenceDate:
     def test_raises_when_nothing_passes(self) -> None:
         with pytest.raises(LookupError, match="no enumerated round"):
             auto_reference_date(TASKS_JSON, today=date(2026, 8, 31), vintage_check=lambda d: False)
+
+
+class TestBundleCommand:
+    def test_wires_defaults_and_pinned_sha_into_build_bundle(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import prime_radiant.epi.serve.bundle as bundle_module
+        from prime_radiant.epi.cli import main
+
+        captured: dict[str, object] = {}
+
+        def fake_build(**kwargs: object) -> Path:
+            captured.update(kwargs)
+            return Path("serve_data")
+
+        monkeypatch.setattr(bundle_module, "build_bundle", fake_build)
+        assert main(["epi", "bundle"]) == 0
+        assert captured["backtest_dir"] == Path("data/backtest")
+        assert captured["benchmark_cache"] == Path("data/benchmarks")
+        assert captured["truth_parquet"] == Path(
+            "data/vintage_cache/"
+            f"{bundle_module.TRUTH_VINTAGE_SHA}--target-hospital-admissions.parquet"
+        )
+        assert captured["truth_vintage_sha"] == bundle_module.TRUTH_VINTAGE_SHA
+        assert captured["reports_dir"] == Path("reports")
+        assert captured["locations_csv"] == Path("data/hub/auxiliary-data/locations.csv")
+        assert captured["out_dir"] == Path("serve_data")

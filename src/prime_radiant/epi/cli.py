@@ -106,6 +106,25 @@ def _cmd_validate(args: argparse.Namespace) -> int:  # pragma: no cover — inte
     return 0
 
 
+def _cmd_bundle(args: argparse.Namespace) -> int:
+    from prime_radiant.epi.serve import bundle
+
+    truth_parquet = (
+        Path(args.vintage_cache) / f"{bundle.TRUTH_VINTAGE_SHA}--target-hospital-admissions.parquet"
+    )
+    out = bundle.build_bundle(
+        backtest_dir=Path(args.backtest_dir),
+        benchmark_cache=Path(args.benchmarks),
+        truth_parquet=truth_parquet,
+        truth_vintage_sha=bundle.TRUTH_VINTAGE_SHA,
+        reports_dir=Path(args.reports),
+        locations_csv=Path(args.hub) / "auxiliary-data" / "locations.csv",
+        out_dir=Path(args.out),
+    )
+    print(f"bundle written to {out}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="prime-radiant")
     subparsers = parser.add_subparsers(dest="namespace", required=True)
@@ -124,6 +143,15 @@ def main(argv: list[str] | None = None) -> int:
     validate.add_argument("file")
     validate.add_argument("--hub", default="data/hub")
     validate.set_defaults(func=_cmd_validate)
+
+    bundle = epi_sub.add_parser("bundle", help="build the dashboard serve bundle (offline)")
+    bundle.add_argument("--backtest-dir", default="data/backtest")
+    bundle.add_argument("--benchmarks", default="data/benchmarks")
+    bundle.add_argument("--vintage-cache", default="data/vintage_cache")
+    bundle.add_argument("--reports", default="reports")
+    bundle.add_argument("--hub", default="data/hub")
+    bundle.add_argument("--out", default="serve_data")
+    bundle.set_defaults(func=_cmd_bundle)
 
     args = parser.parse_args(argv)
     return args.func(args)

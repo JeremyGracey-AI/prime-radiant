@@ -1,0 +1,19 @@
+{
+  "models": [
+    "FluSight-baseline",
+    "FluSight-ensemble",
+    "UMass-flusion",
+    "prime-radiant-baseline",
+    "prime-radiant-ensemble",
+    "prime-radiant-lgbm"
+  ],
+  "reference_date": "2026-05-30",
+  "schema_version": 1,
+  "seasons": {
+    "2023-24": 30,
+    "2024-25": 27,
+    "2025-26": 28
+  },
+  "truth_as_of": "2026-07-09",
+  "truth_vintage_sha": "786312d702f4cac588832f3028fa7288ba264cd4"
+}

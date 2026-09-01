@@ -106,11 +106,31 @@ Requires Homebrew `libomp` on macOS for LightGBM. Built with [Claude Code]
 by refuter agents before being declared done — see `NOTES/restart.md` and the
 `[claude]`-prefixed commit history.
 
+## Dashboard
+
+A Gradio dashboard (US choropleth of predicted 3-week change, per-state fan
+charts, reliability curves, model-vs-baseline league tables) serves the frozen
+backtest record from `serve_data/`, a ~1.7MB precomputed bundle:
+
+```sh
+make bundle                        # offline: rebuilds serve_data/ deterministically
+uv run python dashboard/app.py     # local: http://127.0.0.1:7860
+```
+
+The Space (`jeremygracey-ai/prime-radiant`, CPU-basic) installs only
+gradio/plotly/pandas/pyarrow — never this package, so no LightGBM/libomp and no
+hub clone at serve time. `.github/workflows/space-deploy.yml` stages and
+validates the Space tree on every dispatch; the actual push is triple-gated
+(manual `deploy=true` + `SPACE_LIVE=1` repo var + `HF_TOKEN` secret) and stays
+inert until go-live.
+
 ## Limitations
 
 - Single data source (NHSN), single target (`wk inc flu hosp`); no rate-change /
   peak / ED-visit targets yet.
 - Interval under-dispersion as above; no season-bagging yet.
 - 2022-23 is not backtestable (the hub's vintage history begins Oct 2023).
-- Live submission machinery (Phase E) is not yet built; nothing here submits
-  anywhere.
+- Live submission machinery exists (Phase E) but is structurally inert: the
+  weekly workflow's live path is triple-gated and unimplemented past its gates,
+  and nothing submits anywhere without the go-live runbook being executed by
+  hand. The dashboard serves a frozen bundle, not a live feed.

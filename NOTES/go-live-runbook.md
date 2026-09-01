@@ -37,6 +37,28 @@ Jeremy's explicit go. Verified facts as of 2026-08-31.
    deadline — the hub does not accept late forecasts). First-time contributors
    need a maintainer to approve the hub's CI run (GitHub default).
 
+## Dashboard go-live (Phase F — separate go from the hub go-live)
+
+The Space, its token, and the first push are outward-facing and wait for
+Jeremy's explicit go, exactly like the hub steps above.
+
+1. **Create the Space** (account must be PRO — required for new Gradio Spaces
+   since ~Jul 2026; verified PRO 2026-08-31):
+   `uv run --with huggingface_hub python -c "from huggingface_hub import create_repo; create_repo('jeremygracey-ai/prime-radiant', repo_type='space', space_sdk='gradio', exist_ok=True)"`
+   (space_sdk is mandatory; plain git push does NOT auto-create a Space.)
+2. **Token**: fine-grained HF token, write access scoped to that Space only;
+   store as repo secret `HF_TOKEN` (`gh secret set HF_TOKEN`). Alternative with
+   zero stored secret: configure the repo+workflow as a Trusted Publisher in the
+   Space settings and add `id-token: write` to the deploy job.
+3. **Repo variable**: `gh variable set SPACE_LIVE --body 1`.
+4. **Deploy**: dispatch `space-deploy` with `deploy=true`; verify the Space
+   boots on CPU-basic and every panel renders.
+5. **Staleness watch**: the bundle is frozen (reference 2026-05-30, truth as-of
+   2026-07-09). For a live 2026-27 season the weekly workflow must be chained to
+   rebuild/refresh `serve_data/` and re-dispatch the deploy — NOT wired yet, by
+   design; decide at hub go-live. CPU-basic Spaces sleep after a fixed 48h idle;
+   first visitor wakes them.
+
 ## Standing cautions
 
 - Hub merges are done by human maintainers; unmerged late PRs are abandoned.
