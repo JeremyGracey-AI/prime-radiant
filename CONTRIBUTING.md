@@ -17,7 +17,7 @@ macOS needs Homebrew `libomp` for LightGBM.
 ## Gates
 
 ```sh
-make check            # ruff + format + pyright + offline pytest, coverage ≥85
+make check            # ruff + format + pyright + offline pytest, coverage = 100
 make test-integration # network: real hub clone, S3 benchmarks, byte-regen tests
 ```
 

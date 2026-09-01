@@ -72,3 +72,18 @@ class TestLocationTransform:
         assert clean.forward(np.array([20.0]), "06") == pytest.approx(
             poisoned.forward(np.array([20.0]), "06"), abs=1e-12
         )
+
+
+class TestOffSeasonFallback:
+    def test_entirely_off_season_history_fits_on_all_rows(self) -> None:
+        # July dates sit outside the in-season week band; the fit must fall
+        # back to the full history instead of producing empty groupings
+        dates = pd.date_range("2025-07-05", periods=4, freq="7D")
+        history = pd.DataFrame({"date": dates, "location": "06", "value": [8.0, 9.0, 7.0, 10.0]})
+        transform = LocationTransform.fit(history, POPULATIONS)
+        assert "06" in transform.scale.index
+        assert transform.scale.loc["06"] > 0
+        # and the round-trip still holds on the fallback statistics
+        counts = history["value"].to_numpy(float)
+        forwarded = transform.forward(counts, "06")
+        assert np.allclose(transform.inverse(forwarded, "06"), counts)

@@ -41,3 +41,10 @@ class TestSeasonalNaive:
         short = pd.DataFrame({"date": dates, "location": "US", "value": [5.0, 6, 7, 8]})
         out = seasonal_naive(short, date(2025, 10, 4), quantile_levels=LEVELS3)
         assert set(out[out["horizon"] == 1]["value"]) == {8}
+
+
+def test_no_history_before_cutoff_fails_loudly() -> None:
+    dates = pd.date_range("2025-11-01", periods=4, freq="7D")
+    future_only = pd.DataFrame({"date": dates, "location": "US", "value": 10.0})
+    with pytest.raises(ValueError, match="no history"):
+        seasonal_naive(future_only, date(2024, 1, 6), LEVELS3, horizons=(0,))

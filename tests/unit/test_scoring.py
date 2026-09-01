@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from prime_radiant.eval.scoring import score_quantile_frame
+from prime_radiant.eval.scoring import mean_wis, score_quantile_frame
 
 pytestmark = pytest.mark.unit
 
@@ -80,3 +80,20 @@ class TestScoreQuantileFrame:
         with pytest.raises(ValueError, match="natural|log"):
             # deliberately invalid literal — the runtime guard is under test
             score_quantile_frame(_forecasts(), _truth(), scale=cast(Scale, "sqrt"))
+
+
+def test_no_overlap_with_truth_returns_empty_well_shaped_frame() -> None:
+    # forecasts whose target dates have no observations: zero rows, but the
+    # column contract must hold so downstream league math never KeyErrors
+    truth_elsewhere = pd.DataFrame(
+        {"date": [pd.Timestamp("2030-01-05")], "location": ["06"], "value": [5.0]}
+    )
+    scored = score_quantile_frame(_forecasts(), truth_elsewhere)
+    assert len(scored) == 0
+    for column in ("location", "target_end_date", "horizon", "wis", "ae_median"):
+        assert column in scored.columns
+
+
+def test_mean_wis_is_the_plain_mean_of_the_wis_column() -> None:
+    scores = pd.DataFrame({"wis": [2.0, 4.0, 6.0]})
+    assert mean_wis(scores) == pytest.approx(4.0)

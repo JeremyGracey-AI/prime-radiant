@@ -19,7 +19,7 @@ agent-agnostic: any harness working here follows them.
 2. **Toolchain:** Python ≥3.11 (`requires-python`), 3.12 pinned locally, 3.11–3.13 CI
    matrix. `uv` for env/deps (`uv.lock` committed). Gate before declaring any phase done:
    `uv run ruff check . && uv run ruff format --check . && uv run pyright &&
-   uv run pytest -q -m "not integration" --cov=prime_radiant --cov-fail-under=85`
+   uv run pytest -q -m "not integration" --cov=prime_radiant --cov-fail-under=100`
    (offline; integration tests run separately: `make test-integration`, needs network)
 3. **Secrets in `.env` only** (`ANTHROPIC_API_KEY`, `METACULUS_TOKEN`, news API key —
    all Metaculus-thread; **epi data needs no keys**). `.env` is gitignored. Never print

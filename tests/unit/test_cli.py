@@ -6,7 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from prime_radiant.epi.cli import auto_reference_date, enumerated_reference_dates
+from prime_radiant.epi.cli import (
+    _default_vintage_check,
+    auto_reference_date,
+    enumerated_reference_dates,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -78,3 +82,11 @@ class TestBundleCommand:
         assert captured["reports_dir"] == Path("reports")
         assert captured["locations_csv"] == Path("data/hub/auxiliary-data/locations.csv")
         assert captured["out_dir"] == Path("serve_data")
+
+
+class TestDefaultVintageCheck:
+    def test_factory_returns_a_callable_guard(self, tmp_path: Path) -> None:
+        # the closure body is clone-IO (integration-tested); the factory's
+        # contract — a per-date callable — is locked here
+        check = _default_vintage_check(tmp_path / "hub", tmp_path / "cache")
+        assert callable(check)

@@ -100,7 +100,7 @@ class TestCiWorkflow:
         assert "ruff check ." in runs
         assert "ruff format --check ." in runs
         assert 'python -c "import gradio"' in runs  # stub-warm before pyright
-        assert "--cov-fail-under=85" in runs
+        assert "--cov-fail-under=100" in runs
         assert '-m "not integration"' in runs
 
     def test_codecov_upload_is_public_gated_oidc_single_leg(self) -> None:

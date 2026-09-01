@@ -9,7 +9,7 @@ install-dev:
 # Offline by design: integration tests need network/the hub clone — run them
 # explicitly with `make test-integration`.
 test:
-	uv run pytest -q -m "not integration" --cov=prime_radiant --cov-fail-under=85
+	uv run pytest -q -m "not integration" --cov=prime_radiant --cov-fail-under=100
 
 test-integration:
 	uv run pytest tests/integration -q -m integration

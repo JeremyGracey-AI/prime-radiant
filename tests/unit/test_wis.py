@@ -147,3 +147,8 @@ class TestRelativeWis:
     def test_identical_scores_give_one(self) -> None:
         scores = np.array([1.0, 2.0, 3.0])
         assert relative_wis(scores, scores) == pytest.approx(1.0)
+
+
+def test_relative_wis_rejects_mismatched_task_sets() -> None:
+    with pytest.raises(ValueError, match="identical task sets"):
+        relative_wis(np.array([1.0, 2.0]), np.array([1.0]))

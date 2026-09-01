@@ -49,7 +49,7 @@ jobs:
           uv run python -c "import gradio"
           uv run pyright
       - name: Offline tests with coverage gate
-        run: uv run pytest -q -m "not integration" --cov=prime_radiant --cov-fail-under=85 --cov-report=xml
+        run: uv run pytest -q -m "not integration" --cov=prime_radiant --cov-fail-under=100 --cov-report=xml
       - name: Upload coverage (public repo only; OIDC, no stored token)
         # dependabot-triggered runs get a read-only token (id-token silently
         # dropped), so getIDToken would fail every dependabot PR post-flip —

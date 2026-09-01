@@ -269,3 +269,10 @@ class TestBuildBundle:
         (bundle_inputs["reports_dir"] / "backtest_2024-25.csv").unlink()
         with pytest.raises(FileNotFoundError, match="backtest_2024-25.csv"):
             _build(bundle_inputs, tmp_path / "serve_data")
+
+    def test_missing_locations_csv_fails_loudly(
+        self, bundle_inputs: dict[str, Path], tmp_path: Path
+    ) -> None:
+        bundle_inputs["locations_csv"] = tmp_path / "missing-locations.csv"
+        with pytest.raises(FileNotFoundError, match="missing-locations.csv"):
+            _build(bundle_inputs, tmp_path / "serve_data")
