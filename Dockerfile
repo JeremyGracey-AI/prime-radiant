@@ -4,7 +4,7 @@
 # (e.g. `docker run -v $PWD/data:/app/data prime-radiant epi validate ...`).
 # Digests resolved 2026-08-31; Dependabot's docker ecosystem keeps them fresh.
 
-FROM python:3.12-slim@sha256:e5c9fa26ffb76e11e0f054f30dc2523a2f9693f0c36c0cf1e39b27e152d899fc AS builder
+FROM python:3.14-slim@sha256:656d12e70054d5fda18a045e2494c96701e9792dd1445f95b3d038df954f57e9 AS builder
 COPY --from=ghcr.io/astral-sh/uv@sha256:d1cbaeadc234fe19c0d93daabcf5e98738cd93c6d1dd4918ef6aa30735feb23a /uv /uvx /bin/
 
 ENV UV_COMPILE_BYTECODE=1 \
@@ -23,7 +23,7 @@ COPY src/ src/
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
-FROM python:3.12-slim@sha256:e5c9fa26ffb76e11e0f054f30dc2523a2f9693f0c36c0cf1e39b27e152d899fc
+FROM python:3.14-slim@sha256:656d12e70054d5fda18a045e2494c96701e9792dd1445f95b3d038df954f57e9
 
 # libgomp1 is REQUIRED: lightgbm 4.7.0's manylinux wheel lists libgomp.so.1 in
 # its ELF DT_NEEDED and does NOT bundle it; slim images lack it (verified by
