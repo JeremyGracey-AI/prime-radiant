@@ -53,8 +53,11 @@ jobs:
       - name: Upload coverage (public repo only; OIDC, no stored token)
         # dependabot-triggered runs get a read-only token (id-token silently
         # dropped), so getIDToken would fail every dependabot PR post-flip —
-        # hence the actor clause (adversarial finding)
-        if: matrix.python-version == '3.12' && github.event.repository.private == false && github.actor != 'dependabot[bot]'
+        # hence the actor clause (adversarial finding). CODECOV_READY guards
+        # the Codecov-side onboarding: until the app/repo-sync exists, uploads
+        # fail 'Repository not found' (observed: run 33531642506) — set the
+        # repo var after installing the app (runbook) and failures stay loud.
+        if: matrix.python-version == '3.12' && github.event.repository.private == false && github.actor != 'dependabot[bot]' && vars.CODECOV_READY == '1'
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           use_oidc: true

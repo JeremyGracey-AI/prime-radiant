@@ -96,7 +96,11 @@ Jeremy's explicit go, exactly like the hub steps above.
 - [x] Dependabot PRs #2/#3 rebased to green; merge decision is Jeremy's.
 - [ ] **Jeremy (browser): PyPI pending publisher** (step 3 below) — then the
       first release (release noop=false → publish --ref v0.1.0).
-- [ ] Codecov app only if the next master push's coverage upload fails.
+- [ ] Codecov onboarding CONFIRMED NEEDED (run 33531642506: OIDC token minted
+      fine; Codecov replied "Repository not found"): install/authorize the
+      Codecov GitHub app for this repo at codecov.io, then
+      `gh variable set CODECOV_READY --body 1` — the upload step stays skipped
+      until that variable exists and fails loudly after. Then add the badge.
 - [ ] HF_TOKEN rotation to fine-grained (carried from Phase F).
 
 ## Phase G — public flip sequence (Jeremy's gate) + post-flip steps

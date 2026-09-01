@@ -112,7 +112,7 @@ class TestCiWorkflow:
         # every dependabot PR post-flip (adversarial finding, HIGH)
         assert codecov[0]["if"] == (
             "matrix.python-version == '3.12' && github.event.repository.private == false"
-            " && github.actor != 'dependabot[bot]'"
+            " && github.actor != 'dependabot[bot]' && vars.CODECOV_READY == '1'"
         )
         assert codecov[0]["with"]["use_oidc"] is True
         assert codecov[0]["with"]["files"] == "coverage.xml"
