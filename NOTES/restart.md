@@ -29,11 +29,33 @@ YAML. Done = CI dry run emits a validating file; PR step skipped without LIVE.
   timeouts, cron 22:17 UTC Tue; live job triple-gated + secret-gated + exits 1
   loudly until go-live. Workflow-honesty test enforces statically.
 - 181 offline tests (cov 93.68%) + 8 integration green.
-- NOT yet run: Phase E adversarial workflow (next before declaring done).
+- done: Phase E adversarial workflow (4 agents). Live-gates SURVIVED (five
+  independent gates verified against live GitHub state: sole-admin repo, zero
+  secrets/variables/environments, boolean-input semantics doc-confirmed,
+  contents:read token, exit-1 step with no submission code). Submission validity
+  SURVIVED (every hubValidations check replicated against the LIVE hub config;
+  magnitudes sane vs official baseline for the same round; zero fixture drift).
+  Test-honesty PARTIALLY REFUTED and fixed: exact-conjunction assertion replaces
+  substring checks (the ||-compound mutant passed all 7 old tests; now fails —
+  verified empirically), counts_lt_popn boundary tested at value == population
+  (>-mutant killed; our >= matches hubValidations' strict `<`), raw-float writer
+  test kills the astype mutant. Hardened from findings: dispatch inputs reach
+  shell via env indirection, persist-credentials false, metadata pyproject path
+  fixed (was dead code), writer refuses multi-reference-date frames.
+- **CI re-proof on the hardened workflow**: run 33458426164 — success; dry-run
+  green, live-submit SKIPPED, submission artifact 19,900 bytes.
+- Process note (recorded): one commit slipped past lint because a gate chain
+  piped `make check` through tail (pipeline exit = tail's); fixed in the next
+  commit with the gate run unpiped. Gate commands in future sessions: never
+  pipe the gate command itself.
 
 ## Next step
 
-Phase E adversarial verification; then Phase F (Gradio dashboard on HF Spaces).
+Phase F (dashboard): Gradio app — US choropleth of predicted 3-week change,
+per-state fan chart with observed history, reliability plot, model-vs-baseline
+table; space-deploy.yml pushes to HF Space jeremygracey-ai/prime-radiant
+(CPU-basic; secrets only via Space settings). New plan-mode session with
+verification workflow first.
 
 ## Verify
 
