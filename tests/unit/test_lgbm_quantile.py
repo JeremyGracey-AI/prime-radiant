@@ -73,8 +73,11 @@ class TestFitPredict:
         )
         raw = np.column_stack(
             [
-                lgb.train(_params(level, 59_460_707), dataset, num_boost_round=5).predict(
-                    inputs.x_predict.to_numpy(float)
+                np.asarray(
+                    lgb.train(_params(level, 59_460_707), dataset, num_boost_round=5).predict(
+                        inputs.x_predict.to_numpy(float)
+                    ),
+                    dtype=float,
                 )
                 for level in QUANTILE_LEVELS
             ]

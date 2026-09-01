@@ -48,10 +48,15 @@ def fit_predict(
     x_predict = inputs.x_predict.to_numpy(float)
     dataset = lgb.Dataset(x_train, label=inputs.y_train, free_raw_data=False)
 
+    # np.asarray narrows lightgbm's union predict return for column_stack —
+    # the older numpy stubs resolved on the 3.11 matrix leg reject the union.
     deltas = np.column_stack(
         [
-            lgb.train(_params(level, seed), dataset, num_boost_round=num_boost_round).predict(
-                x_predict
+            np.asarray(
+                lgb.train(_params(level, seed), dataset, num_boost_round=num_boost_round).predict(
+                    x_predict
+                ),
+                dtype=float,
             )
             for level in quantile_levels
         ]

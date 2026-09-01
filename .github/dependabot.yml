@@ -20,3 +20,10 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # the image's python tracks the project's deliberate 3.12 pin; only
+      # digest/patch refreshes of the same minor are wanted here
+      - dependency-name: "python"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
