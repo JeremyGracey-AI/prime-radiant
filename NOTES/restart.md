@@ -63,17 +63,31 @@ outward steps).
   PATH is verified locally, untested until the first real dispatch; DC's
   visual rendering on the choropleth is confirmed programmatically (in trace
   locations) but eyeballed only on the walkthrough page, not on a live Space.
-- NOT done (needs Jeremy's explicit go — runbook "Dashboard go-live" steps
-  1-5): create Space (PRO verified), fine-grained HF_TOKEN secret,
-  SPACE_LIVE=1, dispatch deploy, verify live. The handoff's done condition
-  ("Space live on CPU-basic") is deliberately NOT met without that go.
+- **GONE LIVE 2026-08-31 ~22:45 PDT on Jeremy's explicit "go live on
+  everything"** — done condition MET: Space live on CPU-basic at
+  https://huggingface.co/spaces/jeremygracey-ai/prime-radiant (deploy run
+  33474626675 green end-to-end: stage → artifact → repo_info pre-check →
+  hf upload; app HTTP 200; served config verified 4 tabs / 4 plots / 5
+  handlers). Space created public via local credential; SPACE_LIVE=1;
+  HF_TOKEN secret = Jeremy's cached BROAD token (his explicit call —
+  **rotation to fine-grained TODO**, recorded in the runbook).
+- **Hub registration PR OPEN**: cdcepi/FluSight-forecast-hub#3696
+  (designated_model=true — committed Phase E value, Jeremy's ping answer left
+  it default; amendable on fork branch until merge). Metadata re-validated
+  against the LIVE hub schema (byte-identical to recorded fixture) before
+  opening. Fork created. PAT + LIVE=1 deliberately NOT done (weekly live path
+  is a ~Nov item). First-time-contributor CI needs maintainer approval — watch
+  the PR.
+- Jeremy OVERRODE the one-phase-per-session rule in-session: Phase G is to be
+  planned NOW, evaluated by him, then run on his approval. Phase G recon
+  workflow launched (4 researchers: tooling SHAs/psr-prefix, house precedents,
+  Docker/docs, public-flip audit).
 
 ## Next step
 
-Jeremy's go/no-go on the Dashboard go-live runbook steps 1-5. If go: execute
-them in-session and verify the Space boots. If no-go: Phase F closes
-deploy-ready; next session starts Phase G (release hardening) per
-HANDOFF_PHASES_FG.md — one phase per session, plan-mode recon workflow first.
+Present the Phase G plan (from the recon results) for Jeremy's evaluation;
+run it on his approval. The public flip remains its own explicit gate inside
+Phase G even under the override.
 
 ## Verify
 

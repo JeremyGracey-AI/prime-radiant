@@ -108,6 +108,8 @@ by refuter agents before being declared done — see `NOTES/restart.md` and the
 
 ## Dashboard
 
+**Live: https://huggingface.co/spaces/jeremygracey-ai/prime-radiant**
+
 A Gradio dashboard (US choropleth of predicted 3-week change, per-state fan
 charts, reliability curves, model-vs-baseline league tables) serves the frozen
 backtest record from `serve_data/`, a ~1.7MB precomputed bundle:

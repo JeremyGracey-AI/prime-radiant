@@ -3,6 +3,27 @@
 Nothing below happens automatically. Every step is outward-facing and waits for
 Jeremy's explicit go. Verified facts as of 2026-08-31.
 
+## Executed 2026-08-31 (Jeremy's "go live on everything")
+
+- [x] Step 1 — fork created: JeremyGracey-AI/FluSight-forecast-hub.
+- [x] Step 4 — registration PR OPEN: cdcepi/FluSight-forecast-hub#3696
+      (`designated_model: true` — the committed Phase E value; amendable on the
+      fork branch `add-jgracey-prime-radiant-metadata` until the hub merges).
+      Metadata re-validated against the LIVE hub schema before opening
+      (byte-identical to the recorded fixture). First-time contributors need a
+      maintainer to approve the hub's CI run — expect a wait.
+- [x] Dashboard go-live 1–4 — Space live: https://huggingface.co/spaces/jeremygracey-ai/prime-radiant
+      (created public via local credential; SPACE_LIVE=1; deploy run 33474626675
+      green end-to-end incl. repo_info pre-check + hf upload; app HTTP 200,
+      served config verified: 4 tabs, 4 plots, 5 handlers).
+- [ ] **TODO (Jeremy): rotate HF_TOKEN** — the repo secret currently holds the
+      BROAD cached write token (Jeremy's explicit call to unblock the deploy);
+      replace with a fine-grained token scoped to the one Space, then revoke
+      nothing else (the cached local token stays for local use).
+- NOT done, deliberately: step 2 (PAT — only needed for CI-opened weekly PRs,
+  ~Nov) and step 3 (`LIVE=1` — stays unset until the weekly live path is
+  implemented; arming it early would muddy the audit trail).
+
 ## Preconditions (watch, ~Oct-Nov 2026)
 
 - [ ] Hub adds 2026-27 reference dates to `hub-config/tasks.json` (2025-26
