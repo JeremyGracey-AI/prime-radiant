@@ -9,6 +9,10 @@ from the conventional commit history.
 
 <!-- version list -->
 
+## v0.1.0 (2026-09-01)
+
+- Initial Release
+
 ## Pre-release history (unversioned, 2026-08)
 
 The project was built in adversarially-verified phases before its first tagged
