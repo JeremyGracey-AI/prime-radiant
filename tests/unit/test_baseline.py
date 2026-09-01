@@ -105,3 +105,19 @@ class TestFlusightBaselineDeterministicParts:
         clean = flusight_baseline(history, date(2025, 11, 1), config)
         dirty = flusight_baseline(polluted, date(2025, 11, 1), config)
         pd.testing.assert_frame_equal(clean, dirty)
+
+
+class TestGuardBranches:
+    def test_single_observation_collapses_to_last_value(self) -> None:
+        # one point in the window -> no 7-day pairs -> empty diffs -> the grid
+        # degenerates to zeros and every horizon-0 quantile equals last value
+        config = BaselineConfig(quantile_levels=LEVELS3, nsims=5)
+        frame = flusight_baseline(_history([15.0]), date(2025, 11, 8), config)
+        h0 = frame.loc[frame["horizon"] == 0]
+        assert set(h0["value"]) == {15}
+
+    def test_no_training_data_fails_loudly(self) -> None:
+        config = BaselineConfig(quantile_levels=LEVELS3, nsims=5)
+        empty = _history([float("nan"), float("nan")])
+        with pytest.raises(ValueError, match="no training data"):
+            flusight_baseline(empty, date(2025, 11, 8), config)

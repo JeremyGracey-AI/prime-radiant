@@ -132,3 +132,27 @@ class TestRenderCalibrationPng:
         fig.savefig(empty, dpi=150)
         plt.close(fig)
         assert out.stat().st_size > 1.2 * empty.stat().st_size
+
+
+class TestCoverageCurveMissingLevels:
+    def test_width_without_submitted_levels_is_skipped_honestly(self) -> None:
+        # the fixture submits 5 levels; width 0.98 needs 0.01/0.99 — every task
+        # is skipped and the row must say n=0 with NaN, never fake coverage
+        import numpy as np
+
+        curve = coverage_curve(_forecast_frame(), _truth(), widths=(0.98,))
+        row = curve.iloc[0]
+        assert row["n"] == 0
+        assert np.isnan(row["empirical"])
+
+
+class TestCalibrationPngOddPanels:
+    def test_two_seasons_leave_one_axis_off(self, tmp_path) -> None:
+        # 2 seasons + the horizon panel = 3 panels on a 2x2 grid: the fourth
+        # axis must be turned off, not left as an empty frame
+        curve = coverage_curve(_forecast_frame(), _truth(), widths=(0.5, 0.9))
+        curves = {"2024-25": {"m1": curve}, "2025-26": {"m1": curve}}
+        out = tmp_path / "calibration.png"
+        render_calibration_png(curves, {0: curve}, out)
+        assert out.exists()
+        assert out.stat().st_size > 10_000  # a real multi-panel figure, not a stub

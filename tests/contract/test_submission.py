@@ -138,3 +138,45 @@ class TestValidateSubmission:
 
         frame = build_submission_frame(_model_quantiles(), REFERENCE_DATE)
         validate_submission(frame, moved)  # must not raise
+
+    def test_rejects_unknown_location(self) -> None:
+        frame = build_submission_frame(_model_quantiles(), REFERENCE_DATE)
+        frame.loc[frame.index[:23], "location"] = "99"  # not a hub jurisdiction
+        with pytest.raises(SubmissionInvalidError, match="location.*not in hub contract"):
+            validate_submission(frame, TASKS_JSON)
+
+    def test_rejects_unknown_horizon(self) -> None:
+        frame = build_submission_frame(_model_quantiles(), REFERENCE_DATE)
+        frame.loc[frame["horizon"] == 3, "horizon"] = 9
+        with pytest.raises(SubmissionInvalidError, match="horizon.*not in hub contract"):
+            validate_submission(frame, TASKS_JSON)
+
+    def test_pure_schema_violation_is_wrapped_not_leaked(self) -> None:
+        # every hub-contract check passes; only the pandera schema catches a
+        # quantile crossing — the raw SchemaError must arrive as the declared
+        # SubmissionInvalidError, never leak pandera internals to callers
+        frame = build_submission_frame(_model_quantiles(), REFERENCE_DATE)
+        group = frame.loc[(frame["location"] == "06") & (frame["horizon"] == 0)]
+        low, high = group.index[0], group.index[-1]
+        frame.loc[low, "value"], frame.loc[high, "value"] = (
+            frame.loc[high, "value"],
+            frame.loc[low, "value"],
+        )
+        with pytest.raises(SubmissionInvalidError, match="schema violation"):
+            validate_submission(frame, TASKS_JSON)
+
+    def test_missing_primary_target_fails_loudly(self, tmp_path: Path) -> None:
+        import json
+
+        config = json.loads(TASKS_JSON.read_text())
+        for round_config in config["rounds"]:
+            for task in round_config["model_tasks"]:
+                ids = task["task_ids"]["target"]
+                for key in ("required", "optional"):
+                    if ids.get(key):
+                        ids[key] = ["wk inc something else" for _ in ids[key]]
+        mutated = tmp_path / "tasks.json"
+        mutated.write_text(json.dumps(config))
+        frame = build_submission_frame(_model_quantiles(), REFERENCE_DATE)
+        with pytest.raises(SubmissionInvalidError, match="not found in"):
+            validate_submission(frame, mutated)
