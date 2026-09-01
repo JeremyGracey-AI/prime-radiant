@@ -87,6 +87,18 @@ Jeremy's explicit go, exactly like the hub steps above.
    redeploy that run's STALE staged artifact — always dispatch fresh, never
    re-run.
 
+## FLIPPED PUBLIC 2026-09-01 ~09:25 PDT (Jeremy's explicit word)
+
+- [x] Repo public; MIT license detected; description/topics live.
+- [x] Pages enabled via API (build_type=workflow) — docs deploy un-skipped and
+      the site serves: https://jeremygracey-ai.github.io/prime-radiant/
+- [x] Secret scanning + push protection enabled via API.
+- [x] Dependabot PRs #2/#3 rebased to green; merge decision is Jeremy's.
+- [ ] **Jeremy (browser): PyPI pending publisher** (step 3 below) — then the
+      first release (release noop=false → publish --ref v0.1.0).
+- [ ] Codecov app only if the next master push's coverage upload fails.
+- [ ] HF_TOKEN rotation to fine-grained (carried from Phase F).
+
 ## Phase G — public flip sequence (Jeremy's gate) + post-flip steps
 
 Pre-flip (agent-executable on go): LICENSE committed; repo description/topics

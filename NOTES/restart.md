@@ -116,7 +116,13 @@ outward steps).
   (waste, accepted); dependabot PRs #2/#3 (setup-uv v10, upload-artifact v7)
   open — need rebase post-8299fc5 before merging; Metaculus thread still
   parked.
-- NOT done (the gate): THE PUBLIC FLIP — Jeremy's word. Post-flip steps in
+- **FLIPPED PUBLIC 2026-09-01 ~09:25 PDT on Jeremy's word** — MIT detected,
+  Pages enabled via API and docs deploy un-skipped (site 200 at
+  jeremygracey-ai.github.io/prime-radiant), secret scanning + push protection
+  enabled via API, badges resolve anonymously. Remaining for Jeremy: PyPI
+  pending publisher (then first release), Codecov app only-if-needed,
+  HF_TOKEN rotation.
+- Previously (the gate): THE PUBLIC FLIP — Jeremy's word. Post-flip steps in
   the runbook "Phase G — public flip sequence": Pages enable, push protection,
   PyPI pending publisher, Codecov app if needed, first release + publish
   dispatch --ref on the tag. HF_TOKEN rotation TODO still open from Phase F.

@@ -4,8 +4,9 @@
 [![AI-USE: declared](https://img.shields.io/badge/AI--USE-declared-2ea44f)](./AI-USE.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Dashboard](https://img.shields.io/badge/%F0%9F%A4%97%20Space-live-blue)](https://huggingface.co/spaces/jeremygracey-ai/prime-radiant)
-<!-- At the public flip / first release these join (kept out until true):
-     codecov, PyPI version, docs — see NOTES/go-live-runbook.md -->
+[![docs](https://img.shields.io/badge/docs-live-2ea44f)](https://jeremygracey-ai.github.io/prime-radiant/)
+<!-- At first release / first coverage upload these join (kept out until true):
+     codecov, PyPI version — see NOTES/go-live-runbook.md -->
 
 Calibrated forecasting, measured honestly. Two threads share this repo:
 
