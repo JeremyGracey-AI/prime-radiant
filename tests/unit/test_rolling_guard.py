@@ -69,7 +69,7 @@ class TestToIntegerSubmission:
         frame = to_integer_submission(self._continuous(), date(2025, 11, 29))
         assert len(frame) == 2 * 2 * len(QUANTILE_LEVELS)
         assert (frame["reference_date"] == pd.Timestamp("2025-11-29")).all()
-        assert frame["value"].map(float).map(float.is_integer).all()
+        assert all(float(v).is_integer() for v in frame["value"])
         assert (frame["value"] >= 0).all()  # location 48's negative tail clipped
         assert sorted(frame["output_type_id"].unique()) == sorted(float(q) for q in QUANTILE_LEVELS)
 

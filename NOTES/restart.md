@@ -147,6 +147,15 @@ outward steps).
   RUNNING; hub PR #3696 open awaiting maintainer CI; weekly cron active;
   0 open PRs/issues.
 
+- Coverage push (Jeremy's ask, 2026-09-01 ~16:15 PDT): rolling.py + metadata.py
+  70.6%/70.8% -> 100% with REAL tests (to_integer_submission contract incl. the
+  loud crossing SchemaError, hub rounding rule, all-NaN guard, cleanroom
+  fallback, write round-trip); 5 mutants run and killed; offline total 95.95%
+  -> 97.72%. PROCESS SLIP (recorded, again): the gate was piped
+  (`make check | tail`) in the commit chain and a pyright error reached commit
+  76f7226; caught immediately, fixed next commit, gate re-run UNPIPED. The
+  rule stands: never pipe the gate command itself.
+
 ## Next step
 
 Jeremy's flip word → execute flip + post-flip verification (docs deploy
