@@ -16,10 +16,12 @@ Jeremy's explicit go. Verified facts as of 2026-08-31.
       (created public via local credential; SPACE_LIVE=1; deploy run 33474626675
       green end-to-end incl. repo_info pre-check + hf upload; app HTTP 200,
       served config verified: 4 tabs, 4 plots, 5 handlers).
-- [ ] **TODO (Jeremy): rotate HF_TOKEN** — the repo secret currently holds the
-      BROAD cached write token (Jeremy's explicit call to unblock the deploy);
-      replace with a fine-grained token scoped to the one Space, then revoke
-      nothing else (the cached local token stays for local use).
+- [x] **HF_TOKEN ROTATED 2026-09-01 ~10:47 PDT**: repo secret now holds a
+      fine-grained token scoped to Write on only the one Space (Jeremy minted
+      it; secret set in his own terminal, never in a transcript). Verified by
+      redeploy run 33539866635 — repo_info pre-check + hf upload green under
+      the new token; Space RUNNING, HTTP 200. Broad cached local token
+      untouched, per plan.
 - NOT done, deliberately: step 2 (PAT — only needed for CI-opened weekly PRs,
   ~Nov) and step 3 (`LIVE=1` — stays unset until the weekly live path is
   implemented; arming it early would muddy the audit trail).
@@ -101,7 +103,7 @@ Jeremy's explicit go, exactly like the hub steps above.
       Codecov GitHub app for this repo at codecov.io, then
       `gh variable set CODECOV_READY --body 1` — the upload step stays skipped
       until that variable exists and fails loudly after. Then add the badge.
-- [ ] HF_TOKEN rotation to fine-grained (carried from Phase F).
+- [x] HF_TOKEN rotation to fine-grained — done 2026-09-01 (see above).
 
 ## Phase G — public flip sequence (Jeremy's gate) + post-flip steps
 
