@@ -101,11 +101,12 @@ Jeremy's explicit go, exactly like the hub steps above.
       773b97a, tag v0.1.0, GitHub release); publish run 33540651371 on the tag
       ref — Trusted Publishing green, pypi.org/project/prime-radiant live
       (wheel 53KB, scoped sdist 344KB). PyPI badge added.
-- [ ] Codecov onboarding CONFIRMED NEEDED (run 33531642506: OIDC token minted
-      fine; Codecov replied "Repository not found"): install/authorize the
-      Codecov GitHub app for this repo at codecov.io, then
-      `gh variable set CODECOV_READY --body 1` — the upload step stays skipped
-      until that variable exists and fails loudly after. Then add the badge.
+- [x] **CODECOV LIVE 2026-09-01 ~11:10 PDT**: Jeremy signed up + connected
+      GitHub on codecov.io; CODECOV_READY=1 set; upload green on run
+      33541724367 and the push after — badge renders 96%. Added to README.
+- [x] Dependabot PRs #2/#3 MERGED (Jeremy's "finish this out"): setup-uv →
+      v10.0.1, upload-artifact → v7.0.1 across workflows; ci green on the
+      bumped pins.
 - [x] HF_TOKEN rotation to fine-grained — done 2026-09-01 (see above).
 
 ## Phase G — public flip sequence (Jeremy's gate) + post-flip steps

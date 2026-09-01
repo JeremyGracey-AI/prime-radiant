@@ -120,8 +120,12 @@ outward steps).
   Pages enabled via API and docs deploy un-skipped (site 200 at
   jeremygracey-ai.github.io/prime-radiant), secret scanning + push protection
   enabled via API, badges resolve anonymously. v0.1.0 RELEASED + ON PYPI
-  2026-09-01 (runs 33540519945/33540651371; publisher converted). Remaining
-  for Jeremy: Codecov app + CODECOV_READY=1.
+  2026-09-01 (runs 33540519945/33540651371; publisher converted). Codecov LIVE
+  (app connected, CODECOV_READY=1, badge 96%). Dependabot PRs #2/#3 merged, ci
+  green on bumped pins. EVERYTHING ACTIONABLE IS CLOSED — remaining items are
+  calendar/external only: hub PR #3696 maintainer CI, ~Oct tasks.json
+  re-verification, ~Nov first live submission (explicit go), 60-day cron watch
+  (commit every ~50 days in season).
   HF_TOKEN rotation DONE 2026-09-01 (fine-grained single-Space token; verified
   by redeploy run 33539866635).
 - Previously (the gate): THE PUBLIC FLIP — Jeremy's word. Post-flip steps in
