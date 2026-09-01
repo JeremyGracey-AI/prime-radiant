@@ -119,8 +119,9 @@ outward steps).
 - **FLIPPED PUBLIC 2026-09-01 ~09:25 PDT on Jeremy's word** — MIT detected,
   Pages enabled via API and docs deploy un-skipped (site 200 at
   jeremygracey-ai.github.io/prime-radiant), secret scanning + push protection
-  enabled via API, badges resolve anonymously. Remaining for Jeremy: PyPI
-  pending publisher (then first release), Codecov app + CODECOV_READY=1.
+  enabled via API, badges resolve anonymously. v0.1.0 RELEASED + ON PYPI
+  2026-09-01 (runs 33540519945/33540651371; publisher converted). Remaining
+  for Jeremy: Codecov app + CODECOV_READY=1.
   HF_TOKEN rotation DONE 2026-09-01 (fine-grained single-Space token; verified
   by redeploy run 33539866635).
 - Previously (the gate): THE PUBLIC FLIP — Jeremy's word. Post-flip steps in

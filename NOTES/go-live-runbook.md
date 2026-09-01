@@ -96,8 +96,11 @@ Jeremy's explicit go, exactly like the hub steps above.
       the site serves: https://jeremygracey-ai.github.io/prime-radiant/
 - [x] Secret scanning + push protection enabled via API.
 - [x] Dependabot PRs #2/#3 rebased to green; merge decision is Jeremy's.
-- [ ] **Jeremy (browser): PyPI pending publisher** (step 3 below) — then the
-      first release (release noop=false → publish --ref v0.1.0).
+- [x] **v0.1.0 RELEASED AND PUBLISHED 2026-09-01 ~10:55 PDT**: Jeremy
+      registered the pending publisher; release run 33540519945 (psr commit
+      773b97a, tag v0.1.0, GitHub release); publish run 33540651371 on the tag
+      ref — Trusted Publishing green, pypi.org/project/prime-radiant live
+      (wheel 53KB, scoped sdist 344KB). PyPI badge added.
 - [ ] Codecov onboarding CONFIRMED NEEDED (run 33531642506: OIDC token minted
       fine; Codecov replied "Repository not found"): install/authorize the
       Codecov GitHub app for this repo at codecov.io, then
