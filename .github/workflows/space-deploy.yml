@@ -83,9 +83,16 @@ jobs:
           echo "  target: huggingface.co/spaces/jeremygracey-ai/prime-radiant"
           echo "  source: the validated 'space' artifact from the stage job"
           find space -type f | sort
-      - name: Upload to the Space
+      - name: Verify the Space exists (refuse implicit creation)
         if: env.HF_TOKEN != ''
-        # EXACT pin: the `hf` CLI arg surface is what this step depends on.
+        # `hf upload` silently CREATES a missing Space (create_repo exist_ok in
+        # huggingface_hub cli/upload.py). Space creation is a runbook-only
+        # action, so a missing Space must fail loudly here instead.
+        # EXACT pin: the `hf` CLI arg surface is what these steps depend on.
         run: |
           pip install --quiet huggingface_hub==1.29.0
+          python -c "from huggingface_hub import HfApi; HfApi().repo_info('jeremygracey-ai/prime-radiant', repo_type='space')"
+      - name: Upload to the Space
+        if: env.HF_TOKEN != ''
+        run: |
           hf upload jeremygracey-ai/prime-radiant space . --repo-type space --commit-message "deploy from GitHub Actions"

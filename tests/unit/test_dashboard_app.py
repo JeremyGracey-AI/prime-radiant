@@ -25,20 +25,27 @@ def bundle() -> panel_data.Bundle:
 
 
 class TestCommittedBundleContract:
-    def test_choropleth_covers_the_52_mappable_jurisdictions(
+    def test_choropleth_covers_the_51_drawable_jurisdictions(
         self, bundle: panel_data.Bundle
     ) -> None:
         frame = panel_data.choropleth_frame(bundle)
-        assert len(frame) == 52  # universe minus US (not drawable on scope='usa')
-        # the abbreviation guard must accept the real data end-to-end
+        # universe minus US and PR: neither is drawable on scope='usa', and an
+        # undrawn region must never set the color scale (adversarial finding)
+        assert len(frame) == 51
         figure = panel_plots.choropleth_figure(frame, bundle.manifest["reference_date"])
-        assert len(_traces(figure)[0].locations) == 52
-        assert "DC" in list(_traces(figure)[0].locations)
+        locations = list(_traces(figure)[0].locations)
+        assert len(locations) == 51
+        assert "DC" in locations
+        assert "PR" not in locations
 
     def test_fan_series_works_for_the_national_row(self, bundle: panel_data.Bundle) -> None:
         history, bands = panel_data.fan_series(bundle, "US")
         assert not history.empty
-        assert len(bands) == 5  # anchor point + horizons 0-3
+        # truth covers h0's target date in this bundle, so no anchor prepend —
+        # just horizons 0-3 with strictly increasing dates
+        assert len(bands) == 4
+        assert bands["target_end_date"].is_monotonic_increasing
+        assert not bands["target_end_date"].duplicated().any()
 
     def test_every_season_has_reliability_and_league_rows(self, bundle: panel_data.Bundle) -> None:
         for season in ("2023-24", "2024-25", "2025-26"):

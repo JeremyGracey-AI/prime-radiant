@@ -135,12 +135,23 @@ def latest_reference(bundle: Bundle, model: str) -> pd.Timestamp:
 
 
 def _anchors(truth: pd.DataFrame, reference: pd.Timestamp) -> pd.DataFrame:
-    """Last observed value at or before the reference date, per location."""
-    eligible = truth.loc[truth["date"] <= reference].sort_values("date", kind="stable")
+    """Last REAL observed value at or before the reference date, per location.
+
+    NaN truth rows are reporting gaps, not observations — taking one as the
+    anchor would blank the state silently (adversarial finding)."""
+    eligible = truth.loc[(truth["date"] <= reference) & truth["value"].notna()].sort_values(
+        "date", kind="stable"
+    )
     last = eligible.groupby("location", sort=False).tail(1)
     return last.loc[:, ["location", "date", "value"]].rename(
         columns={"date": "anchor_date", "value": "anchor"}
     )
+
+
+# locationmode='USA-states' cannot draw the national row or PR; leaving them in
+# would let an invisible region set the color scale (adversarial finding). Both
+# stay reachable through the fan-chart dropdown.
+NOT_DRAWABLE = frozenset({"US", "72"})
 
 
 def choropleth_frame(bundle: Bundle, model: str = "ensemble") -> pd.DataFrame:
@@ -153,9 +164,14 @@ def choropleth_frame(bundle: Bundle, model: str = "ensemble") -> pd.DataFrame:
         & (frame["output_type_id"] == 0.5),
         ["location", "value"],
     ].rename(columns={"value": "predicted"})
+    h3 = h3.loc[~h3["location"].isin(NOT_DRAWABLE)]
+    anchors = _anchors(bundle.truth, reference)
+    unanchored = sorted(set(h3["location"]) - set(anchors["location"]))
+    if unanchored:  # an inner merge would drop these states silently
+        raise RuntimeError(f"no real observation to anchor the change for: {unanchored}")
     names = bundle.locations.loc[:, ["location", "abbreviation", "location_name"]]
-    merged = h3.merge(_anchors(bundle.truth, reference), on="location").merge(names, on="location")
-    merged = merged.loc[merged["location"] != "US"].reset_index(drop=True)
+    merged = h3.merge(anchors, on="location").merge(names, on="location")
+    merged = merged.reset_index(drop=True)
     merged["change"] = merged["predicted"] - merged["anchor"]
     return merged.loc[
         :, ["location", "abbreviation", "location_name", "anchor", "predicted", "change"]
@@ -185,7 +201,11 @@ def fan_series(
 
     anchors = _anchors(bundle.truth, reference)
     anchor = anchors.loc[anchors["location"] == location]
-    if not anchor.empty:  # prepend the anchor point to close the history->forecast gap
+    first_target = bands["target_end_date"].iloc[0]
+    # prepend the anchor point only across a REAL history->forecast gap: when
+    # truth already covers h0's target date, a prepend would duplicate that x
+    # and draw a vertical segment (adversarial finding)
+    if not anchor.empty and anchor["anchor_date"].iloc[0] < first_target:
         value = float(anchor["anchor"].iloc[0])
         anchor_row = pd.DataFrame(
             [

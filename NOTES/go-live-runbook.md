@@ -47,9 +47,13 @@ Jeremy's explicit go, exactly like the hub steps above.
    `uv run --with huggingface_hub python -c "from huggingface_hub import create_repo; create_repo('jeremygracey-ai/prime-radiant', repo_type='space', space_sdk='gradio', exist_ok=True)"`
    (space_sdk is mandatory; plain git push does NOT auto-create a Space.)
 2. **Token**: fine-grained HF token, write access scoped to that Space only;
-   store as repo secret `HF_TOKEN` (`gh secret set HF_TOKEN`). Alternative with
-   zero stored secret: configure the repo+workflow as a Trusted Publisher in the
-   Space settings and add `id-token: write` to the deploy job.
+   store as repo secret `HF_TOKEN` (`gh secret set HF_TOKEN`). The narrow scope
+   also forecloses implicit Space creation: `hf upload` silently create_repo's a
+   missing Space with a broad write token (verified in huggingface_hub 1.29.0
+   cli/upload.py), and the deploy job's repo_info pre-check plus this scope make
+   that structurally impossible. Alternative with zero stored secret: configure
+   the repo+workflow as a Trusted Publisher in the Space settings and add
+   `id-token: write` to the deploy job.
 3. **Repo variable**: `gh variable set SPACE_LIVE --body 1`.
 4. **Deploy**: dispatch `space-deploy` with `deploy=true`; verify the Space
    boots on CPU-basic and every panel renders.

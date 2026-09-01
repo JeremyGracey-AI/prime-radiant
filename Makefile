@@ -18,7 +18,11 @@ lint:
 	uv run ruff check .
 	uv run ruff format --check .
 
+# gradio writes its component .pyi stubs into site-packages at FIRST IMPORT;
+# a fresh venv that has never imported it fails pyright on Dropdown.change
+# (adversarial finding: `make check` was not reproducible from a clean clone).
 typecheck:
+	uv run python -c "import gradio"
 	uv run pyright
 
 check: lint typecheck test

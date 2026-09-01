@@ -68,6 +68,15 @@ class TestSpaceDeployHonesty:
         assert "jeremygracey-ai/prime-radiant" in upload["run"]
         assert "--repo-type" in upload["run"]
 
+    def test_deploy_verifies_the_space_exists_before_uploading(self, workflow: dict) -> None:
+        # `hf upload` silently CREATES a missing Space (create_repo exist_ok in
+        # huggingface_hub cli/upload.py) — Space creation is a runbook-only
+        # action, so the deploy job must refuse to run against a missing Space
+        runs = [step.get("run", "") for step in workflow["jobs"]["deploy"]["steps"]]
+        verify_index = next(i for i, run in enumerate(runs) if "repo_info" in run)
+        upload_index = next(i for i, run in enumerate(runs) if "hf upload" in run)
+        assert verify_index < upload_index
+
     def test_generated_requirements_never_pin_gradio(self, workflow: dict) -> None:
         # sdk_version in the README front-matter governs the Space's gradio;
         # a requirements pin would fight it
@@ -76,8 +85,11 @@ class TestSpaceDeployHonesty:
             for step in workflow["jobs"]["stage"]["steps"]
             if "requirements.txt" in step.get("run", "")
         ]
-        assert staging, "no step generates the Space requirements.txt"
-        assert "gradio==" not in staging[0]
+        assert len(staging) == 1, "exactly one step may write the Space requirements.txt"
+        all_stage_runs = "\n".join(
+            step.get("run", "") for step in workflow["jobs"]["stage"]["steps"]
+        )
+        assert "gradio==" not in all_stage_runs
 
     def test_no_expression_interpolation_in_run_blocks(self, workflow: dict) -> None:
         for job in workflow["jobs"].values():

@@ -53,7 +53,8 @@ def create_app(bundle: panel_data.Bundle | None = None) -> gr.Blocks:
             gr.Markdown(
                 "Predicted change over 3 weeks: horizon-3 median minus the last "
                 "observation at or before the reference date. Red = predicted rise. "
-                "Puerto Rico is not drawable on the USA map — use the fan chart tab."
+                "Puerto Rico and the national total are not drawable on the USA map "
+                "(and excluded from the color scale) — see the fan chart tab."
             )
             map_model.change(make_choropleth, [map_model], map_plot)
         with gr.Tab("Fan chart"):

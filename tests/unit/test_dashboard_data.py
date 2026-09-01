@@ -31,10 +31,12 @@ BAND_LEVELS = (0.025, 0.1, 0.25, 0.5, 0.75, 0.9, 0.975)
 
 
 def _forecast_frame(reference: str) -> pd.DataFrame:
+    # includes the national row and PR so the not-drawable exclusion is
+    # exercised by this synthetic fixture, not only the committed-bundle test
     rows = []
     for horizon in (0, 1, 2, 3):
         target_end = pd.Timestamp(reference) + pd.Timedelta(weeks=horizon)
-        for location in ("01", "06"):
+        for location in ("01", "06", "US", "72"):
             for level in BAND_LEVELS:
                 rows.append(
                     {
@@ -52,12 +54,12 @@ def _forecast_frame(reference: str) -> pd.DataFrame:
     return pd.DataFrame.from_records(rows)
 
 
-def _truth_frame() -> pd.DataFrame:
+def _truth_frame(end: str = "2024-12-14") -> pd.DataFrame:
     # Truth runs PAST the forecast window (like the frozen bundle): the value at
     # the reference date (20.0) differs from the last value (50.0).
-    dates = pd.date_range("2024-09-07", "2024-12-14", freq="7D")
+    dates = pd.date_range("2024-09-07", end, freq="7D")
     rows = []
-    for location in ("01", "06"):
+    for location in ("01", "06", "US", "72"):
         for when in dates:
             value = 20.0 if when <= pd.Timestamp("2024-11-23") else 50.0
             rows.append(
@@ -72,14 +74,14 @@ def _truth_frame() -> pd.DataFrame:
     return pd.DataFrame.from_records(rows)
 
 
-def _write_bundle(root: Path) -> Path:
+def _write_bundle(root: Path, truth: pd.DataFrame | None = None) -> Path:
     (root / "forecasts").mkdir(parents=True)
     (root / "league").mkdir()
     for model in ("ensemble", "lgbm", "baseline"):
         _forecast_frame("2024-11-23").to_parquet(
             root / "forecasts" / f"{model}.parquet", index=False
         )
-    _truth_frame().to_parquet(root / "truth.parquet", index=False)
+    (_truth_frame() if truth is None else truth).to_parquet(root / "truth.parquet", index=False)
     (root / "locations.csv").write_bytes((FIXTURES / "locations.csv").read_bytes())
     (root / "league" / "backtest_2024-25.csv").write_text(
         "season,model_id,horizon,n,n_relative,truth_as_of,wis,ae_median,wis__log,"
@@ -163,24 +165,50 @@ class TestChoroplethFrame:
         assert (frame["predicted"] == 18.0).all()
         assert (frame["change"] == -2.0).all()
 
-    def test_uses_two_letter_abbreviations_and_excludes_us(self, bundle: Bundle) -> None:
+    def test_excludes_the_locations_usa_states_cannot_draw(self, bundle: Bundle) -> None:
+        # US and PR (72) are in the forecasts but not drawable under
+        # locationmode='USA-states'; leaving them in would let an invisible
+        # region set the color scale (adversarial finding)
         frame = choropleth_frame(bundle, model="ensemble")
         assert set(frame["abbreviation"]) == {"AL", "CA"}
+        assert "US" not in set(frame["location"])
+        assert "72" not in set(frame["location"])
         assert frame["abbreviation"].str.fullmatch(r"[A-Z]{2}").all()
+
+    def test_nan_on_anchor_date_falls_back_to_last_real_observation(self, tmp_path: Path) -> None:
+        # adversarial finding: a NaN truth value on the anchor date must not
+        # become the anchor — the last REAL observation must
+        truth = _truth_frame()
+        on_anchor_date = (truth["location"] == "01") & (truth["date"] == pd.Timestamp("2024-11-23"))
+        truth.loc[on_anchor_date, "value"] = float("nan")
+        bundle = load_bundle(_write_bundle(tmp_path / "serve_data", truth=truth))
+        frame = choropleth_frame(bundle, model="ensemble")
+        row = frame.loc[frame["location"] == "01"].iloc[0]
+        assert row["anchor"] == 20.0  # from 2024-11-16, not NaN from 2024-11-23
+
+    def test_location_with_no_real_observation_fails_loudly(self, tmp_path: Path) -> None:
+        truth = _truth_frame()
+        truth.loc[truth["location"] == "06", "value"] = float("nan")
+        bundle = load_bundle(_write_bundle(tmp_path / "serve_data", truth=truth))
+        with pytest.raises(RuntimeError, match="06"):
+            choropleth_frame(bundle, model="ensemble")
 
 
 class TestFanSeries:
-    def test_bands_are_ordered_and_prepended_with_the_anchor(self, bundle: Bundle) -> None:
+    def test_no_anchor_prepend_when_truth_covers_the_first_target_date(
+        self, bundle: Bundle
+    ) -> None:
+        # adversarial finding: prepending the anchor when h0's target_end_date
+        # already has truth duplicates the x value and draws a vertical segment
         history, bands = fan_series(bundle, "01", model="ensemble")
         assert list(history.columns) == ["date", "value"]
         assert history["value"].iloc[-1] == 50.0
-        # first band row is the anchor point closing the history->forecast gap
-        first = bands.iloc[0]
-        assert first["target_end_date"] == pd.Timestamp("2024-11-23")
-        assert first["median"] == 20.0
-        forecast_rows = bands.iloc[1:]
-        assert len(forecast_rows) == 4
-        for _, row in forecast_rows.iterrows():
+        assert len(bands) == 4  # horizons 0-3, no anchor row
+        assert bands["target_end_date"].is_monotonic_increasing
+        assert not bands["target_end_date"].duplicated().any()
+        assert bands.iloc[0]["target_end_date"] == pd.Timestamp("2024-11-23")
+        assert bands.iloc[0]["median"] == 15.0  # h0 median, not the anchor
+        for _, row in bands.iterrows():
             assert (
                 row["lo95"]
                 <= row["lo80"]
@@ -190,6 +218,20 @@ class TestFanSeries:
                 <= row["hi80"]
                 <= row["hi95"]
             )
+
+    def test_anchor_prepended_only_across_a_real_gap(self, tmp_path: Path) -> None:
+        # truth ends a week before the reference date -> a real gap exists and
+        # the anchor point closes it
+        bundle = load_bundle(
+            _write_bundle(tmp_path / "serve_data", truth=_truth_frame(end="2024-11-16"))
+        )
+        _, bands = fan_series(bundle, "01", model="ensemble")
+        assert len(bands) == 5  # anchor + horizons 0-3
+        first = bands.iloc[0]
+        assert first["target_end_date"] == pd.Timestamp("2024-11-16")
+        assert first["median"] == 20.0
+        assert bands["target_end_date"].is_monotonic_increasing
+        assert not bands["target_end_date"].duplicated().any()
 
 
 class TestSelectorsAndTables:
