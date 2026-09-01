@@ -6,8 +6,7 @@
 [![Dashboard](https://img.shields.io/badge/%F0%9F%A4%97%20Space-live-blue)](https://huggingface.co/spaces/jeremygracey-ai/prime-radiant)
 [![docs](https://img.shields.io/badge/docs-live-2ea44f)](https://jeremygracey-ai.github.io/prime-radiant/)
 [![PyPI](https://img.shields.io/pypi/v/prime-radiant)](https://pypi.org/project/prime-radiant/)
-<!-- At first coverage upload this joins (kept out until true):
-     codecov — see NOTES/go-live-runbook.md -->
+[![codecov](https://codecov.io/gh/JeremyGracey-AI/prime-radiant/branch/master/graph/badge.svg)](https://app.codecov.io/github/JeremyGracey-AI/prime-radiant)
 
 Calibrated forecasting, measured honestly. Two threads share this repo:
 
