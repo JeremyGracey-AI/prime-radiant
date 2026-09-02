@@ -204,6 +204,27 @@ outward steps).
   restore `git checkout` reverted to HEAD and wiped the implementation —
   commit first, then mutate.
 
+- Publication evening (2026-09-01 late): the project went public-facing.
+  (1) CODEBASE WALKTHROUGH — docs/codebase-walkthrough.md (mermaid, mkdocs nav
+  + GitHub-rendered) + drawn PDF docs/prime-radiant-codebase.pdf + standalone
+  HTML live at jeremygracey.ai/prime-radiant and the docs site. (2) HEADLINED
+  as "opus one"/best work: GitHub profile README top section + project 01 on
+  jeremygracey.ai. (3) SENTINEL — dark-console replay of 2025-26
+  (docs/sentinel.html, live at jeremygracey.ai/prime-radiant/sentinel/ with OG
+  image): real season data, printed flag rule (median >=2.0/100k within 2 wk),
+  refuter-corrected score 48 flagged / 20 a week early / 23 crossing-week /
+  5 a week behind / 0 missed / 0 false; dramatized advisory feed is
+  triple-labeled. Claims refuter caught 8 defects incl. 2 HIGH (ontime
+  catch-all hid 5 late flags; present-tense "files to the hub" before any
+  live submission) — all fixed. LinkedIn draft in session scratchpad;
+  scripts/record_sentinel.py (Jeremy's) renders the MP4 clip.
+  (4) LICENSE MIT -> Apache-2.0 (37cd7d7): canonical text + NOTICE in
+  wheel/sdist, SPDX expression, stale MIT classifier dropped (PEP 639);
+  GitHub detects Apache-2.0; PyPI v0.1.0/v0.1.1 remain MIT as published —
+  next release carries Apache-2.0. PROCESS SLIP (recorded): `git add -A`
+  swept two files Jeremy added in parallel into the license commit unreviewed
+  (they were clean; CI green) — inspect `git status` before every commit.
+
 ## Next step
 
 Calendar items only: hub PR #3696 maintainer CI approval (watch); ~Oct 2026
