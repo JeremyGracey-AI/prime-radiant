@@ -21,3 +21,6 @@ dist/
 
 # MkDocs build output
 site/
+
+# Shadow-run scratch (only the validated CSV in shadow-output/ is committed)
+shadow-scratch/

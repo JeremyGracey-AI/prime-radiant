@@ -5,6 +5,10 @@
 # (which does not exist until go-live). Enforcement is structural, not prose.
 # Cron minute is off-hour (GitHub top-of-the-hour congestion guidance); the
 # brief's "Tue 22:00 UTC" is Tue 22:17 UTC in practice.
+#
+# The shadow job is the off-season baseline: a current-week forecast committed
+# to shadow-output/ whenever the vintage guard passes, an honest green skip
+# (exit 3) while the hub's truth data is stale. Zero hub contact either way.
 
 name: weekly-forecast
 
@@ -51,12 +55,78 @@ jobs:
         run: |
           file=$(ls model-output/*.csv | head -1)
           uv run prime-radiant epi validate "$file"
+      - name: Render model metadata
+        # Shipped in the artifact so live-submit can bundle it into the first
+        # hub PR if the registration PR is still unmerged (hub precedent #2329).
+        run: uv run python -c "from pathlib import Path; from prime_radiant.epi.submission.metadata import write_model_metadata; write_model_metadata(Path('model-output'))"
       - name: Upload submission artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: submission
-          path: model-output/*.csv
+          path: |
+            model-output/*.csv
+            model-output/*.yml
           if-no-files-found: error
+
+  shadow:
+    # Current-week shadow baseline: SELF-ARMING. The vintage guard is never
+    # relaxed — while the hub's truth data is off-season stale the forecast
+    # exits 3 (honest skip, green run with a step-summary notice); the week the
+    # hub resumes publishing, shadow CSVs start landing in shadow-output/
+    # automatically. Intermediates scratch in shadow-scratch/ (gitignored);
+    # only the validated CSV is committed.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      - name: Sync environment
+        run: uv sync --all-groups
+      - name: Clone FluSight hub (blobless + sparse)
+        run: uv run python -c "from pathlib import Path; from prime_radiant.epi.data.hub import ensure_hub_clone; ensure_hub_clone(Path('data/hub'))"
+      - name: Shadow forecast (current week, guard unrelaxed)
+        id: shadow
+        run: |
+          code=0
+          uv run prime-radiant epi forecast --shadow --out shadow-scratch || code=$?
+          if [ "$code" -eq 3 ]; then
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            echo "### Shadow skip — no usable current-week vintage (hub truth data stale, off-season)" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$code" -ne 0 ]; then
+            exit "$code"
+          else
+            echo "skipped=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Validate shadow file (round membership relaxed, nothing else)
+        if: steps.shadow.outputs.skipped == 'false'
+        run: |
+          file=$(ls shadow-scratch/*.csv | head -1)
+          uv run prime-radiant epi validate --shadow "$file"
+      - name: Commit shadow forecast to shadow-output/
+        if: steps.shadow.outputs.skipped == 'false'
+        env:
+          # env indirection: the token never interpolates into shell text
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p shadow-output
+          cp shadow-scratch/*.csv shadow-output/
+          ref=$(basename "$(ls shadow-scratch/*.csv | head -1)" | cut -c1-10)
+          git config user.name "Jeremy Gracey"
+          git config user.email "jeremy.a.gracey@gmail.com"
+          git add shadow-output
+          if git diff --cached --quiet; then
+            echo "shadow file for ${ref} unchanged — nothing to commit"
+            exit 0
+          fi
+          git commit -m "[cron] chore(shadow): current-week shadow forecast ${ref}"
+          git pull --rebase origin master
+          git push "https://x-access-token:${TOKEN}@github.com/${REPO}" HEAD:master
 
   live-submit:
     # ALL THREE gates: manual dispatch with live=true, repo variable LIVE=1,
@@ -76,10 +146,26 @@ jobs:
           echo "  upstream: cdcepi/FluSight-forecast-hub (base: main)"
           echo "  fork:     JeremyGracey-AI/FluSight-forecast-hub"
           echo "  file:     model-output/JGracey-prime_radiant/<reference_date>-JGracey-prime_radiant.csv"
-          echo "This step only ECHOES today; the PR step below is the side effect."
+          echo "This step only ECHOES; the PR step below is the side effect."
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        if: env.HUB_PAT != ''
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        if: env.HUB_PAT != ''
+        with:
+          name: submission
+          path: submission
       - name: Open hub PR
         if: env.HUB_PAT != ''
+        env:
+          # gh auth + fork push both use the PAT; env indirection keeps it out
+          # of workflow-expression text (the URL is assembled at run time).
+          GH_TOKEN: ${{ secrets.FLUSIGHT_HUB_PAT }}
         run: |
-          echo "NOT IMPLEMENTED until go-live: requires fork + registered metadata."
-          echo "See NOTES/go-live-runbook.md. Failing loudly rather than pretending."
-          exit 1
+          set -euo pipefail
+          SUBMISSION_FILE=$(ls submission/*.csv | head -1)
+          METADATA_FILE=$(ls submission/*.yml | head -1)
+          FORK_PUSH_URL="https://x-access-token:${GH_TOKEN}@github.com/JeremyGracey-AI/FluSight-forecast-hub"
+          export SUBMISSION_FILE METADATA_FILE FORK_PUSH_URL
+          bash scripts/open_hub_pr.sh

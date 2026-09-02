@@ -1,0 +1,82 @@
+# The season trigger: daily check whether the hub enumerated reference dates
+# beyond the last known season (2026-27 config expected Sep 2026 by precedent:
+# landed Sep 12 2023, Sep 30 2024, Sep 5 2025). On detection, pings via a repo
+# issue — exactly one open at a time. curl + python3 + gh only: no third-party
+# actions, no checkout, nothing to SHA-pin.
+
+name: hub-config-watch
+
+on:
+  schedule:
+    - cron: "23 13 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Bump after handling a firing (the issue body says so too); until then
+      # the exact-title open-issue check keeps daily re-fires from duplicating.
+      LAST_KNOWN_MAX: "2026-05-30"
+      ISSUE_TITLE: "FluSight hub: new season rounds enumerated (watcher)"
+    steps:
+      - name: Check hub tasks.json for rounds beyond the last known season
+        id: check
+        run: |
+          set -euo pipefail
+          curl -fsSL -o tasks.json https://raw.githubusercontent.com/cdcepi/FluSight-forecast-hub/main/hub-config/tasks.json
+          python3 - "$LAST_KNOWN_MAX" > new_dates.txt <<'PY'
+          import json
+          import sys
+
+          last_known = sys.argv[1]
+          config = json.load(open("tasks.json"))
+          dates: set[str] = set()
+          for round_config in config.get("rounds", []):
+              for task in round_config.get("model_tasks", []):
+                  ids = task["task_ids"]["reference_date"]
+                  dates.update((ids.get("required") or []) + (ids.get("optional") or []))
+          print("\n".join(sorted(d for d in dates if d > last_known)))
+          PY
+          if grep -q . new_dates.txt; then
+            echo "new=true" >> "$GITHUB_OUTPUT"
+            echo "### New hub rounds beyond ${LAST_KNOWN_MAX}" >> "$GITHUB_STEP_SUMMARY"
+            cat new_dates.txt >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "new=false" >> "$GITHUB_OUTPUT"
+            echo "no rounds beyond ${LAST_KNOWN_MAX}"
+          fi
+      - name: Ping via issue (exactly one open at a time)
+        if: steps.check.outputs.new == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          open_count=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --json title \
+            --jq "[.[] | select(.title == \"$ISSUE_TITLE\")] | length")
+          if [ "$open_count" -gt 0 ]; then
+            echo "ping issue already open — nothing to do"
+            exit 0
+          fi
+          {
+            echo "The hub enumerated reference dates beyond \`$LAST_KNOWN_MAX\`:"
+            echo
+            sed 's/^/- /' new_dates.txt
+            echo
+            echo "Next steps (NOTES/go-live-runbook.md):"
+            echo "1. Re-check the model-metadata schema for new required fields (2025-26 precedent: backfill_adjustment) and amend hub PR #3696 if needed."
+            echo "2. Mint the classic public_repo PAT -> gh secret set FLUSIGHT_HUB_PAT; gh variable set LIVE --body 1."
+            echo "3. Dispatch weekly-forecast (live=false) against a real new-season round to shake out the path."
+            echo "4. First real submission in the first open window — explicit go only."
+            echo
+            echo "After handling: bump LAST_KNOWN_MAX in .github/workflows/hub-config-watch.yml, then close this issue."
+          } > body.md
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "$ISSUE_TITLE" --body-file body.md
