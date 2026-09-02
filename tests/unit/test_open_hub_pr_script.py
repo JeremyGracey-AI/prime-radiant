@@ -20,9 +20,7 @@ REF = "2026-11-21"
 
 
 def _git(*args: str, cwd: Path) -> str:
-    result = subprocess.run(
-        ["git", *args], cwd=cwd, capture_output=True, text=True, check=True
-    )
+    result = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True)
     return result.stdout.strip()
 
 
@@ -81,9 +79,7 @@ class HubFixture:
             "GH_CAPTURE": str(self.gh_capture),
             **extra_env,
         }
-        return subprocess.run(
-            ["bash", str(SCRIPT)], env=env, capture_output=True, text=True
-        )
+        return subprocess.run(["bash", str(SCRIPT)], env=env, capture_output=True, text=True)
 
     def fork_tree(self) -> str:
         return _git(
@@ -144,9 +140,7 @@ class TestOpenHubPr:
         assert result.returncode == 0, result.stderr
         assert "DRY RUN" in result.stdout
         assert not fixture.gh_capture.exists()
-        branches = _git(
-            "--git-dir", str(fixture.fork), "branch", "--list", cwd=tmp_path
-        )
+        branches = _git("--git-dir", str(fixture.fork), "branch", "--list", cwd=tmp_path)
         assert "submit" not in branches
 
     def test_rejects_a_filename_that_is_not_a_dated_submission(self, tmp_path: Path) -> None:

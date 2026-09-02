@@ -116,9 +116,7 @@ class TestForecastShadowWiring:
 
         captured: dict[str, object] = {}
         monkeypatch.setattr(hub_module, "ensure_hub_clone", lambda path: Path(path))
-        monkeypatch.setattr(
-            cli_module, "shadow_reference_date", lambda today, check: shadow_result
-        )
+        monkeypatch.setattr(cli_module, "shadow_reference_date", lambda today, check: shadow_result)
 
         def fake_run_origin(
             hub: Path, reference: date, backtest_dir: Path, cache: Path
@@ -166,9 +164,7 @@ class TestForecastShadowWiring:
         from prime_radiant.epi.cli import main
 
         captured = self._wire(monkeypatch, date(2026, 9, 5))
-        code = main(
-            ["epi", "forecast", "--shadow", "--reference-date", "2026-09-05"]
-        )
+        code = main(["epi", "forecast", "--shadow", "--reference-date", "2026-09-05"])
         assert code == 2
         assert captured == {}
 
@@ -198,9 +194,7 @@ class TestForecastShadowWiring:
         from prime_radiant.epi.cli import main
 
         captured = self._wire(monkeypatch, None)
-        code = main(
-            ["epi", "forecast", "--reference-date", "2026-09-05", "--out", str(tmp_path)]
-        )
+        code = main(["epi", "forecast", "--reference-date", "2026-09-05", "--out", str(tmp_path)])
         assert code == 0
         assert captured["backtest_dir"] == Path("data/backtest")
 

@@ -50,15 +50,36 @@ Jeremy's explicit go. Verified facts as of 2026-08-31.
    Metadata-only PRs merge off-season (verified: hub PRs #3685/#3687). Decide
    `designated_model` (currently `true` = CDC-ensemble-eligible, max 2/team;
    flip to false for a soft launch) BEFORE opening.
-5. **Implement the PR step** in `.github/workflows/weekly-forecast.yml`
-   (`live-submit` job currently exits 1 loudly): push branch to the fork with
-   the week's file at `model-output/JGracey-prime_radiant/<ref>-JGracey-prime_radiant.csv`,
-   `gh pr create` against `cdcepi:main`. One forecast file per weekly PR
-   (observed convention).
+5. **PR step IMPLEMENTED** (2026-09-01): `scripts/open_hub_pr.sh`, called by
+   the `live-submit` job after downloading the dry-run's validated artifact
+   (CSV + rendered metadata). Pushes `submit-<ref>` to the fork, opens the PR
+   against `cdcepi:main`, one forecast file per PR; bundles
+   `model-metadata/JGracey-prime_radiant.yml` ONLY if upstream still lacks it
+   (hub precedent #2329 — covers PR #3696 still being open). Fixture-tested
+   against local bare upstream/fork repos with a stubbed `gh`
+   (tests/unit/test_open_hub_pr_script.py). STATED GAP: real execution against
+   the live hub is untestable until a season window opens — first dispatch
+   with live=true is also the script's first live run; watch it end-to-end.
 6. **First live submission**: manual dispatch with `live=true`, inside the
    window (Sun −6 .. Wed −3 before the Saturday reference date, 11 PM ET hard
    deadline — the hub does not accept late forecasts). First-time contributors
    need a maintainer to approve the hub's CI run (GitHub default).
+
+## Off-season shadow baseline + season watcher (added 2026-09-01)
+
+- **Shadow job** (weekly-forecast.yml): every Tuesday cron also attempts a
+  CURRENT-week forecast (`epi forecast --shadow`). The vintage guard is never
+  relaxed: while the hub's truth data is off-season stale (last update
+  2026-07-09) the job exits 3 = green run + "Shadow skip" step summary. The
+  week the hub resumes publishing truth (2025 precedent: Sep 5), validated
+  shadow CSVs start landing in `shadow-output/` via `[cron] chore(shadow)`
+  commits — the season baseline arms itself, no action needed.
+- **hub-config-watch.yml**: daily 13:23 UTC check of the hub's live tasks.json
+  for reference dates beyond LAST_KNOWN_MAX=2026-05-30. On the 2026-27 config
+  landing it opens ONE repo issue with the go-live checklist (metadata schema
+  re-check, PAT + LIVE, dry-run dispatch, first-window submission). After
+  handling: bump LAST_KNOWN_MAX, close the issue.
+- Both crons are subject to the 60-day auto-disable watch below.
 
 ## Dashboard go-live (Phase F — separate go from the hub go-live)
 

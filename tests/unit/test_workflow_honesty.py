@@ -71,7 +71,9 @@ class TestWorkflowHonesty:
         # Separate runner: the dry-run's validated CSV + rendered metadata reach
         # live-submit only through the artifact — never a re-forecast.
         steps = workflow["jobs"]["live-submit"]["steps"]
-        downloads = [s for s in steps if str(s.get("uses", "")).startswith("actions/download-artifact@")]
+        downloads = [
+            s for s in steps if str(s.get("uses", "")).startswith("actions/download-artifact@")
+        ]
         assert len(downloads) == 1
         assert downloads[0]["with"]["name"] == "submission"
 
@@ -201,7 +203,7 @@ class TestHubConfigWatch:
         assert issue["if"] == "steps.check.outputs.new == 'true'"
         # exactly one open ping at a time: exact-title count check before create
         assert "gh issue list" in issue["run"]
-        assert 'select(.title ==' in issue["run"]
+        assert "select(.title ==" in issue["run"]
 
     def test_detection_reads_the_live_hub_config(self, watch: dict) -> None:
         steps = watch["jobs"]["watch"]["steps"]
@@ -210,4 +212,5 @@ class TestHubConfigWatch:
             "https://raw.githubusercontent.com/cdcepi/FluSight-forecast-hub/main/hub-config/tasks.json"
             in check["run"]
         )
-        assert "curl -fsSL" in check["run"]  # -f: an HTTP error fails the run, never reads as "no news"
+        # -f: an HTTP error fails the run, never reads as "no news"
+        assert "curl -fsSL" in check["run"]
