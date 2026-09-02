@@ -156,12 +156,36 @@ outward steps).
   76f7226; caught immediately, fixed next commit, gate re-run UNPIPED. The
   rule stands: never pipe the gate command itself.
 
+- 100% and the ratchet (2026-09-01, three user-pushed rounds): the four lowest
+  files (metaculus, validate, report, baseline) then every remaining miss ->
+  **100.00% offline coverage, 335 tests, 15 mutants run and killed total**;
+  gate ratcheted to `--cov-fail-under=100` in Makefile + ci.yml. Learning
+  moment written up as the personal skill `closing-coverage-gaps`
+  (~/.claude/skills/), TDD'd per writing-skills: baseline agents 0/2 ran
+  mutants, with-skill 2/2 produced mutant tables.
+- Notation system (answer to "where do we write up the work"; README rejected
+  as a front page, not a work log). Three layers, each in the project's own
+  machinery:
+  1. **CHANGELOG.md** (what changed) — psr-generated from the actor-prefixed
+     conventional commits; v0.1.1 cut deliberately to materialize this
+     session's entries (Testing section carries the three coverage commits).
+  2. **The Record** (why/how narrative) — Afterword section added
+     ("Coverage to 100 — and the gate raised to hold it"), PDF rebuilt and
+     committed at docs/prime-radiant-record.pdf (120f5a2).
+  3. **restart.md** (session log) — this file.
+- v0.1.1 chain complete: release run green -> release commit ede7a51
+  (CHANGELOG + version + uv.lock, psr-authored) -> publish dispatched
+  `--ref v0.1.1` (house rule) -> build+publish green with attestations ->
+  pypi.org shows 0.1.1 latest. ci/docs/ai-use green on master.
+- README: codecov sunburst graph embedded (Jeremy's pick), right-aligned
+  beside the intro, linked to the codecov dashboard (7d5a0ea).
+
 ## Next step
 
-Jeremy's flip word → execute flip + post-flip verification (docs deploy
-un-skips, badges green) → his browser steps (Pages source, push protection,
-PyPI pending publisher) → optional first release. Then next session: hub
-2026-27 re-verification ~Oct, first live submission ~Nov (explicit go).
+Calendar items only: hub PR #3696 maintainer CI approval (watch); ~Oct 2026
+tasks.json re-verification for the 2026-27 season; ~Nov 2026 first live
+submission on Jeremy's explicit go only (LIVE + PAT deliberately unset);
+commit every ~50 days in season so the cron never auto-disables.
 
 ## Verify
 
