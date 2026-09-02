@@ -57,9 +57,14 @@ Jeremy's explicit go. Verified facts as of 2026-08-31.
    `model-metadata/JGracey-prime_radiant.yml` ONLY if upstream still lacks it
    (hub precedent #2329 — covers PR #3696 still being open). Fixture-tested
    against local bare upstream/fork repos with a stubbed `gh`
-   (tests/unit/test_open_hub_pr_script.py). STATED GAP: real execution against
-   the live hub is untestable until a season window opens — first dispatch
-   with live=true is also the script's first live run; watch it end-to-end.
+   (tests/unit/test_open_hub_pr_script.py). Adversarially hardened
+   (2026-09-01): structural freshness gate (a stale auto-resolved round exits
+   65, never reaches the hub), same-week retries idempotent (force-push to our
+   disposable fork branch; skip-create when the PR is already open), missing
+   PAT on a live dispatch fails RED with a summary. STATED GAP: real execution
+   against the live hub is untestable until a season window opens — first
+   dispatch with live=true is also the script's first live run; watch it
+   end-to-end.
 6. **First live submission**: manual dispatch with `live=true`, inside the
    window (Sun −6 .. Wed −3 before the Saturday reference date, 11 PM ET hard
    deadline — the hub does not accept late forecasts). First-time contributors

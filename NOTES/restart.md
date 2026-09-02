@@ -180,6 +180,30 @@ outward steps).
 - README: codecov sunburst graph embedded (Jeremy's pick), right-aligned
   beside the intro, linked to the codecov dashboard (7d5a0ea).
 
+- Early-live build (2026-09-01 evening, Jeremy: "can we run up before Nov?"):
+  4-agent recon workflow settled it — hub enumerates NOTHING after 2026-05-30
+  (submission structurally impossible today), 2026-27 config lands in Sep by
+  3-season precedent, Oct windows existed 2 of 3 years (earliest realistic
+  real submission mid-late Oct), hub truth data dormant since 2026-07-09.
+  Built on "build it all now": --shadow CLI mode (current-week forecast,
+  vintage guard NEVER relaxed, exit 3 = honest skip; validate --shadow relaxes
+  round membership only), shadow job committing weekly CSVs to shadow-output/
+  once the hub wakes (self-arming baseline), scripts/open_hub_pr.sh replacing
+  the exit-1 stub (fixture-tested vs local bare repos + stubbed gh),
+  hub-config-watch.yml daily season trigger (one-open-issue ping).
+  Adversarial panel: 4 MEDIUMs demonstrated and fixed with regression tests —
+  KeyError-as-skip masquerade (NoUsableVintageError), no freshness gate on the
+  live path (stale round could submit; now exit 65), same-week retry dead-end
+  (force-push idempotency), watcher silent on hub restructure (zero-parse now
+  red); plus missing-PAT green-skip -> red, local self-arming via
+  update_hub_clone, watcher pagination/quoting. 15 mutants run-and-killed
+  total this build; gates green (379 offline @100%, 11 integration); runner
+  proofs: shadow exit-3 path green with step summary + downstream steps
+  SKIPPED, watcher "no rounds beyond 2026-05-30", live-submit skipped.
+  PROCESS SLIP (new lesson): ran mutants on UNCOMMITTED implementation; the
+  restore `git checkout` reverted to HEAD and wiped the implementation —
+  commit first, then mutate.
+
 ## Next step
 
 Calendar items only: hub PR #3696 maintainer CI approval (watch); ~Oct 2026
