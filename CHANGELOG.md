@@ -9,6 +9,58 @@ from the conventional commit history.
 
 <!-- version list -->
 
+## v0.1.1 (2026-09-02)
+
+### Bug Fixes
+
+- **test**: Pyright-clean integer assertion; record the piped-gate slip
+  ([`f1a7a27`](https://github.com/JeremyGracey-AI/prime-radiant/commit/f1a7a274a3704d820a05881f07536da94b55ef70))
+
+### Build System
+
+- **deps**: Bump actions/upload-artifact from 4.6.2 to 7.0.1
+  ([#3](https://github.com/JeremyGracey-AI/prime-radiant/pull/3),
+  [`7148a64`](https://github.com/JeremyGracey-AI/prime-radiant/commit/7148a64b132d14eea94dbc74ce473889236b8821))
+
+- **deps**: Bump astral-sh/setup-uv from 6.8.0 to 10.0.1
+  ([#2](https://github.com/JeremyGracey-AI/prime-radiant/pull/2),
+  [`c282c62`](https://github.com/JeremyGracey-AI/prime-radiant/commit/c282c62571a90f5d5549903f3fc5957cd3e81497))
+
+### Documentation
+
+- **notes**: Finish-out — codecov live (96%), dependabot pins merged; only calendar items remain
+  ([`fbd106a`](https://github.com/JeremyGracey-AI/prime-radiant/commit/fbd106af89ff7da35e8943509be1ac4a0b6543ed))
+
+- **notes**: Record shipped + end-to-end health sweep green
+  ([`606d038`](https://github.com/JeremyGracey-AI/prime-radiant/commit/606d038fb07aaddc6cc8b8ffadfe6fb7158ae7ed))
+
+- **parking-lot**: Daily Oracle (arXiv:2411.08324) constraints for the Metaculus thread
+  ([`99baa00`](https://github.com/JeremyGracey-AI/prime-radiant/commit/99baa00af6f0af13aa093cfdf7c974d4b1c6aac2))
+
+- **readme**: Codecov badge — coverage live via OIDC
+  ([`eaa1aa5`](https://github.com/JeremyGracey-AI/prime-radiant/commit/eaa1aa5fc97a783aed0fc2969b0822277dee76cf))
+
+- **record**: Add The Prime Radiant Record — the full build write-up (PDF)
+  ([`4b18c87`](https://github.com/JeremyGracey-AI/prime-radiant/commit/4b18c87ab41c020271058512c31bfab606dc8311))
+
+- **record**: Afterword — coverage to 100.00%, gate raised to hold it
+  ([`120f5a2`](https://github.com/JeremyGracey-AI/prime-radiant/commit/120f5a2c863b344d70b6f7a1781a3b266f28d1b2))
+
+- **release**: V0.1.0 on PyPI via Trusted Publishing — badge + records
+  ([`cad2e5b`](https://github.com/JeremyGracey-AI/prime-radiant/commit/cad2e5be83806552cfea361b07c4cebee3557f6a))
+
+### Testing
+
+- **coverage**: 100.00% — and the gate now demands it
+  ([`4fbbc51`](https://github.com/JeremyGracey-AI/prime-radiant/commit/4fbbc51f0ef7499a802f47385de1be7b9d33e3fd))
+
+- **coverage**: Rolling.py and metadata.py to 100% — real tests, no theater
+  ([`76f7226`](https://github.com/JeremyGracey-AI/prime-radiant/commit/76f7226e3fe5075edd5e2d95a413d42bf229a1a4))
+
+- **coverage**: The four lowest files to 100% — every file now >=97%
+  ([`9840d96`](https://github.com/JeremyGracey-AI/prime-radiant/commit/9840d9699d3c95754d9318be1aad3ae46f842b4c))
+
+
 ## v0.1.0 (2026-09-01)
 
 - Initial Release

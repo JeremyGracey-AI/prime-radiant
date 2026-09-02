@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "prime-radiant"
-version = "0.1.0"
+version = "0.1.1"
 description = "Calibrated forecasting: Metaculus LLM bot (Brier) and CDC FluSight quantile forecaster (WIS)."
 readme = "README.md"
 requires-python = ">=3.11"
