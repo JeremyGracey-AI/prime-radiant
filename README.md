@@ -12,6 +12,10 @@
 and live in three days, with the complete adversarial ledger:
 **[The Prime Radiant Record (PDF)](docs/prime-radiant-record.pdf)**
 
+**🧭 The codebase walkthrough** — the map, the forecast pipeline, and the gated
+automation, drawn: **[docs/codebase-walkthrough.md](docs/codebase-walkthrough.md)**
+· **[PDF](docs/prime-radiant-codebase.pdf)**
+
 <a href="https://app.codecov.io/github/JeremyGracey-AI/prime-radiant"><img src="https://codecov.io/gh/JeremyGracey-AI/prime-radiant/branch/master/graphs/sunburst.svg" width="170" align="right" alt="Coverage sunburst — every file at 100%"></a>
 
 Calibrated forecasting, measured honestly. Two threads share this repo:
