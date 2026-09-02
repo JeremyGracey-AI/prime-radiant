@@ -12,6 +12,8 @@
 and live in three days, with the complete adversarial ledger:
 **[The Prime Radiant Record (PDF)](docs/prime-radiant-record.pdf)**
 
+<a href="https://app.codecov.io/github/JeremyGracey-AI/prime-radiant"><img src="https://codecov.io/gh/JeremyGracey-AI/prime-radiant/branch/master/graphs/sunburst.svg" width="170" align="right" alt="Coverage sunburst — every file at 100%"></a>
+
 Calibrated forecasting, measured honestly. Two threads share this repo:
 
 - **FluSight epi forecaster** (`prime_radiant.epi`) — CDC FluSight-format quantile
