@@ -139,6 +139,15 @@ jobs:
     env:
       HUB_PAT: ${{ secrets.FLUSIGHT_HUB_PAT }}
     steps:
+      - name: Fail loudly if the PAT is missing
+        # All-steps-skipped reports job SUCCESS (adversarial finding): a go-live
+        # dispatch with a missing/expired PAT looked green while submitting
+        # nothing. An operator who cleared the other two gates gets red + why.
+        if: env.HUB_PAT == ''
+        run: |
+          echo "### Live dispatch WITHOUT FLUSIGHT_HUB_PAT — nothing submitted" >> "$GITHUB_STEP_SUMMARY"
+          echo "live=true and LIVE=1 were set, but the PAT secret is missing or empty." >> "$GITHUB_STEP_SUMMARY"
+          exit 1
       - name: Announce intent (audit trail before any side effect)
         if: env.HUB_PAT != ''
         run: |

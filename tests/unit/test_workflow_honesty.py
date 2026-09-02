@@ -56,16 +56,33 @@ class TestWorkflowHonesty:
         condition = workflow["jobs"]["live-submit"]["if"]
         assert "inputs.live == true" in condition
         assert "vars.LIVE == '1'" in condition
-        # secret gate lives at step level (secrets context unusable in job if:)
+        # secret gate lives at step level (secrets context unusable in job if:):
+        # exactly one loud PAT-absent guard, every other step PAT-gated
         steps = workflow["jobs"]["live-submit"]["steps"]
-        assert all(step.get("if") == "env.HUB_PAT != ''" for step in steps)
+        guards = [s for s in steps if s.get("if") == "env.HUB_PAT == ''"]
+        assert len(guards) == 1
+        assert all(step.get("if") == "env.HUB_PAT != ''" for step in steps if step not in guards)
+
+    def test_missing_pat_on_a_live_dispatch_fails_red_not_skipped_green(
+        self, workflow: dict
+    ) -> None:
+        # Adversarial finding: all-steps-skipped reports job SUCCESS — a go-live
+        # dispatch with a missing/expired PAT looked green while submitting
+        # nothing. The guard step must fail the job loudly, with a summary.
+        steps = workflow["jobs"]["live-submit"]["steps"]
+        guard = next(s for s in steps if s.get("if") == "env.HUB_PAT == ''")
+        assert steps.index(guard) == 0  # first: nothing silently skips before it
+        assert "exit 1" in guard["run"]
+        assert "GITHUB_STEP_SUMMARY" in guard["run"]
 
     def test_live_pr_step_runs_the_submission_script(self, workflow: dict) -> None:
-        # The go-live stub (`exit 1`) is retired: the last step must delegate to
-        # the tested script, and no live-submit step may still fail-by-design.
+        # The go-live stub is retired: the last step must delegate to the tested
+        # script, and no PAT-gated step may still fail-by-design (the only
+        # deliberate exit 1 left is the PAT-absent guard).
         steps = workflow["jobs"]["live-submit"]["steps"]
         assert "scripts/open_hub_pr.sh" in steps[-1]["run"]
-        assert all("exit 1" not in step.get("run", "") for step in steps)
+        gated = [s for s in steps if s.get("if") == "env.HUB_PAT != ''"]
+        assert gated and all("exit 1" not in step.get("run", "") for step in gated)
 
     def test_live_submit_downloads_the_validated_artifact(self, workflow: dict) -> None:
         # Separate runner: the dry-run's validated CSV + rendered metadata reach
@@ -201,9 +218,21 @@ class TestHubConfigWatch:
         steps = watch["jobs"]["watch"]["steps"]
         issue = next(s for s in steps if "gh issue create" in s.get("run", ""))
         assert issue["if"] == "steps.check.outputs.new == 'true'"
-        # exactly one open ping at a time: exact-title count check before create
+        # exactly one open ping at a time: exact-title count via fixed-string
+        # grep (adversarial finding: shell-interpolated jq breaks on quotes),
+        # over a raised page size (default 30 could page the ping out)
         assert "gh issue list" in issue["run"]
-        assert "select(.title ==" in issue["run"]
+        assert "--limit 100" in issue["run"]
+        assert 'grep -Fxc "$ISSUE_TITLE"' in issue["run"]
+
+    def test_zero_parsed_dates_fails_red_not_quiet(self, watch: dict) -> None:
+        # Adversarial finding: a hub-side rename of 'rounds'/'model_tasks' parsed
+        # zero dates and reported "no news" green forever. The live file carries
+        # 89 dates — parsing none means the detector is broken, and must be red.
+        steps = watch["jobs"]["watch"]["steps"]
+        check = next(s for s in steps if s.get("id") == "check")
+        assert "no reference dates parsed" in check["run"]
+        assert "sys.exit(1)" in check["run"]
 
     def test_detection_reads_the_live_hub_config(self, watch: dict) -> None:
         steps = watch["jobs"]["watch"]["steps"]

@@ -38,6 +38,15 @@ def vintage_is_usable(vintage: pd.DataFrame, cutoff: date) -> bool:
     return bool(span_weeks >= _MIN_HISTORY_WEEKS and fresh_enough)
 
 
+class NoUsableVintageError(LookupError):
+    """No vintage passed the guard for this origin — the honest miss.
+
+    Deliberately its own type: KeyError/IndexError are LookupError subclasses,
+    so a bare `except LookupError` around the guard let hub-side schema drift
+    masquerade as "off-season, skip" (adversarial finding). Drift must crash
+    red; only THIS error means the data genuinely is not there yet."""
+
+
 def resolve_usable_vintage(  # pragma: no cover — needs the real clone; integration-tested
     hub_clone: Path, origin: date, vintage_cache: Path | None
 ) -> pd.DataFrame:
@@ -52,7 +61,7 @@ def resolve_usable_vintage(  # pragma: no cover — needs the real clone; integr
             continue
         if vintage_is_usable(frame, cutoff):
             return frame
-    raise LookupError(f"no usable vintage found for origin {origin}")
+    raise NoUsableVintageError(f"no usable vintage found for origin {origin}")
 
 
 def to_integer_submission(continuous: pd.DataFrame, reference_date: date) -> pd.DataFrame:

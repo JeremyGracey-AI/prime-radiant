@@ -8,6 +8,7 @@ NOTES/go-live-runbook.md); everything the script decides is proven here.
 
 import os
 import subprocess
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -16,7 +17,10 @@ pytestmark = pytest.mark.unit
 
 SCRIPT = Path(__file__).parents[2] / "scripts" / "open_hub_pr.sh"
 MODEL_ID = "JGracey-prime_radiant"
-REF = "2026-11-21"
+# In-window relative to the real clock: the script's freshness guard compares
+# the filename date against today (adversarial finding — a stale artifact
+# must never reach the hub).
+REF = (date.today() + timedelta(days=5)).isoformat()
 
 
 def _git(*args: str, cwd: Path) -> str:
@@ -61,7 +65,13 @@ class HubFixture:
         gh_bin.mkdir()
         self.gh_capture = tmp_path / "gh_capture.txt"
         gh_stub = gh_bin / "gh"
-        gh_stub.write_text('#!/usr/bin/env bash\necho "$@" >> "$GH_CAPTURE"\n')
+        gh_stub.write_text(
+            "#!/usr/bin/env bash\n"
+            'echo "$@" >> "$GH_CAPTURE"\n'
+            'if [ "$1" = "pr" ] && [ "$2" = "list" ]; then\n'
+            '  echo "${GH_PR_LIST_COUNT:-0}"\n'
+            "fi\n"
+        )
         gh_stub.chmod(0o755)
         self.path = f"{gh_bin}:{os.environ['PATH']}"
 
@@ -150,3 +160,41 @@ class TestOpenHubPr:
         result = fixture.run(SUBMISSION_FILE=str(rogue))
         assert result.returncode != 0
         assert "unexpected submission filename" in result.stderr
+
+    def test_refuses_a_stale_reference_date(self, tmp_path: Path) -> None:
+        # Adversarial finding: off-season, auto resolves to the LAST enumerated
+        # round — months old — and it validates green. The script is the
+        # structural freshness gate: a past reference date never reaches the hub.
+        fixture = HubFixture(tmp_path, upstream_has_metadata=False)
+        stale = tmp_path / f"2026-05-30-{MODEL_ID}.csv"
+        stale.write_text("reference_date,value\n2026-05-30,1\n")
+        result = fixture.run(SUBMISSION_FILE=str(stale))
+        assert result.returncode == 65
+        assert "refusing stale or far-future submission" in result.stderr
+        assert not fixture.gh_capture.exists()
+
+    def test_refuses_an_impossible_calendar_date(self, tmp_path: Path) -> None:
+        # 2026-13-40 matches the format regex; the calendar check must kill it.
+        fixture = HubFixture(tmp_path, upstream_has_metadata=False)
+        rogue = tmp_path / f"2026-13-40-{MODEL_ID}.csv"
+        rogue.write_text("x\n")
+        result = fixture.run(SUBMISSION_FILE=str(rogue))
+        assert result.returncode != 0
+        assert "unexpected submission filename" in result.stderr
+
+    def test_retry_same_week_reuses_workdir_and_updates_the_branch(self, tmp_path: Path) -> None:
+        # Adversarial finding: a transient gh failure stranded submit-<ref> on
+        # the fork and made every retry die non-fast-forward (and a reused
+        # WORK_DIR died on the existing clone). Retries must be idempotent.
+        fixture = HubFixture(tmp_path, upstream_has_metadata=False)
+        assert fixture.run().returncode == 0
+        second = fixture.run()  # same WORK_DIR, branch already on the fork
+        assert second.returncode == 0, second.stderr
+        assert fixture.gh_capture.read_text().count("pr create") == 2
+
+    def test_skips_pr_create_when_pr_is_already_open(self, tmp_path: Path) -> None:
+        fixture = HubFixture(tmp_path, upstream_has_metadata=False)
+        result = fixture.run(GH_PR_LIST_COUNT="1")
+        assert result.returncode == 0, result.stderr
+        assert "already open" in result.stdout
+        assert "pr create" not in fixture.gh_capture.read_text()

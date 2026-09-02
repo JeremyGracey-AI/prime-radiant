@@ -60,12 +60,15 @@ def shadow_reference_date(today: date, vintage_check: Callable[[date], bool]) ->
 
 
 def _default_vintage_check(hub_clone: Path, vintage_cache: Path) -> Callable[[date], bool]:
-    def check(candidate: date) -> bool:  # pragma: no cover — clone IO; integration-tested
-        from prime_radiant.epi.backtest.rolling import resolve_usable_vintage
+    def check(candidate: date) -> bool:
+        import prime_radiant.epi.backtest.rolling as rolling
 
         try:
-            resolve_usable_vintage(hub_clone, candidate, vintage_cache)
-        except LookupError:
+            rolling.resolve_usable_vintage(hub_clone, candidate, vintage_cache)
+        except rolling.NoUsableVintageError:
+            # the honest miss ONLY — KeyError/IndexError (LookupError subclasses)
+            # from hub-side schema drift propagate and fail the run red, never
+            # masquerading as an off-season skip (adversarial finding)
             return False
         return True
 
@@ -74,7 +77,7 @@ def _default_vintage_check(hub_clone: Path, vintage_cache: Path) -> Callable[[da
 
 def _cmd_forecast(args: argparse.Namespace) -> int:  # pragma: no cover — integration-tested
     from prime_radiant.epi.backtest.rolling import run_origin
-    from prime_radiant.epi.data.hub import ensure_hub_clone
+    from prime_radiant.epi.data.hub import ensure_hub_clone, update_hub_clone
     from prime_radiant.epi.submission.metadata import MODEL_ABBR, TEAM_ABBR
     from prime_radiant.epi.submission.write import write_submission_csv
 
@@ -87,6 +90,11 @@ def _cmd_forecast(args: argparse.Namespace) -> int:  # pragma: no cover — inte
     tasks_json = hub_clone / "hub-config" / "tasks.json"
 
     if args.shadow:
+        # A persistent local clone must see the hub wake up: ensure_hub_clone
+        # never fetches, so without this a local shadow run would evaluate a
+        # frozen snapshot and skip forever (adversarial finding). CI clones
+        # fresh each run; the extra pull there is a harmless no-op.
+        update_hub_clone(hub_clone)
         shadow = shadow_reference_date(
             date.today(), _default_vintage_check(hub_clone, vintage_cache)
         )

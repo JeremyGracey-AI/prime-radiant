@@ -44,6 +44,12 @@ jobs:
               for task in round_config.get("model_tasks", []):
                   ids = task["task_ids"]["reference_date"]
                   dates.update((ids.get("required") or []) + (ids.get("optional") or []))
+          if not dates:
+              # The live file carries ~89 dates; parsing none means the hub
+              # restructured tasks.json and the detector is blind (adversarial
+              # finding: this read as "no news" green forever). Fail red.
+              print("no reference dates parsed — hub config restructured?", file=sys.stderr)
+              sys.exit(1)
           print("\n".join(sorted(d for d in dates if d > last_known)))
           PY
           if grep -q . new_dates.txt; then
@@ -60,8 +66,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          open_count=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --json title \
-            --jq "[.[] | select(.title == \"$ISSUE_TITLE\")] | length")
+          # fixed-string grep, not shell-interpolated jq (quote-fragile), over a
+          # raised page size (the default 30 could page the ping issue out)
+          open_count=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 100 \
+            --json title --jq '.[].title' | grep -Fxc "$ISSUE_TITLE" || true)
           if [ "$open_count" -gt 0 ]; then
             echo "ping issue already open — nothing to do"
             exit 0

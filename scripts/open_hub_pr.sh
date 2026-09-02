@@ -29,11 +29,30 @@ if ! [[ "$ref" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || [ "$file_name" != "${ref}-$
     echo "unexpected submission filename: ${file_name}" >&2
     exit 64
 fi
+
+# Structural freshness gate (adversarial finding): off-season, `auto` resolves
+# to the LAST enumerated round — months stale — and it validates green. The
+# hub window is Sun..Wed before the Saturday reference date (3-6 days out;
+# a UTC-Thursday dispatch inside ET Wednesday is 2), so [0, 13] is generous
+# yet kills every stale round. fromisoformat also rejects impossible dates
+# (2026-13-40) that pass the format regex.
+days_until=$(python3 -c "import datetime as d, sys
+try: ref = d.date.fromisoformat(sys.argv[1])
+except ValueError: sys.exit(64)
+print((ref - d.date.today()).days)" "$ref") || {
+    echo "unexpected submission filename: ${file_name}" >&2
+    exit 64
+}
+if [ "$days_until" -lt 0 ] || [ "$days_until" -gt 13 ]; then
+    echo "refusing stale or far-future submission: ${ref} is ${days_until} day(s) from today" >&2
+    exit 65
+fi
 branch="submit-${ref}"
 
 submission_abs="$(cd "$(dirname "$SUBMISSION_FILE")" && pwd)/$(basename "$SUBMISSION_FILE")"
 metadata_abs="$(cd "$(dirname "$METADATA_FILE")" && pwd)/$(basename "$METADATA_FILE")"
 
+rm -rf "$WORK_DIR/hub"  # a reused WORK_DIR must not kill the clone (retry path)
 git clone --depth 1 "$UPSTREAM_URL" "$WORK_DIR/hub"
 cd "$WORK_DIR/hub"
 git checkout -b "$branch"
@@ -58,7 +77,17 @@ if [ "$DRY_RUN" = "1" ]; then
     exit 0
 fi
 
-git push "$FORK_PUSH_URL" "HEAD:${branch}"
+# --force is safe and makes retries idempotent: the branch lives on OUR fork,
+# is per-week disposable, and a stranded tip from a partial failure must never
+# block the resubmission (adversarial finding: non-FF rejection dead-ended
+# every same-week retry until the branch was hand-deleted).
+git push --force "$FORK_PUSH_URL" "HEAD:${branch}"
+open_prs=$(gh pr list --repo "$UPSTREAM_REPO" --head "${FORK_HEAD_OWNER}:${branch}" \
+    --state open --json number --jq length)
+if [ "$open_prs" -gt 0 ]; then
+    echo "hub PR for ${branch} already open — branch updated, nothing to create"
+    exit 0
+fi
 gh pr create \
     --repo "$UPSTREAM_REPO" \
     --base main \

@@ -116,6 +116,11 @@ class TestForecastShadowWiring:
 
         captured: dict[str, object] = {}
         monkeypatch.setattr(hub_module, "ensure_hub_clone", lambda path: Path(path))
+        monkeypatch.setattr(
+            hub_module,
+            "update_hub_clone",
+            lambda path: captured.setdefault("updated", []).append(path),  # type: ignore[union-attr]
+        )
         monkeypatch.setattr(cli_module, "shadow_reference_date", lambda today, check: shadow_result)
 
         def fake_run_origin(
@@ -144,6 +149,9 @@ class TestForecastShadowWiring:
         assert captured["reference"] == date(2026, 9, 5)
         # shadow intermediates stay under --out, never the committed data/backtest
         assert captured["backtest_dir"] == out / "backtest"
+        # a persistent local clone must see the hub wake up (self-arming holds
+        # locally, not just in CI's fresh clones — adversarial finding)
+        assert captured["updated"] == [Path("data/hub")]
 
     def test_shadow_skip_exits_3_and_never_forecasts(
         self,
@@ -155,7 +163,8 @@ class TestForecastShadowWiring:
 
         captured = self._wire(monkeypatch, None)
         assert main(["epi", "forecast", "--shadow", "--out", str(tmp_path)]) == 3
-        assert captured == {}
+        assert "reference" not in captured  # never forecasts
+        assert captured.get("updated") == [Path("data/hub")]  # clone advanced before the guard
         assert "SHADOW SKIP" in capsys.readouterr().out
 
     def test_shadow_conflicts_with_explicit_reference_date(
@@ -197,6 +206,7 @@ class TestForecastShadowWiring:
         code = main(["epi", "forecast", "--reference-date", "2026-09-05", "--out", str(tmp_path)])
         assert code == 0
         assert captured["backtest_dir"] == Path("data/backtest")
+        assert "updated" not in captured  # only shadow runs advance the clone
 
 
 class TestValidateShadowWiring:
@@ -260,3 +270,42 @@ class TestDefaultVintageCheck:
         # contract — a per-date callable — is locked here
         check = _default_vintage_check(tmp_path / "hub", tmp_path / "cache")
         assert callable(check)
+
+    def test_honest_miss_reads_as_false(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        import prime_radiant.epi.backtest.rolling as rolling_module
+
+        def no_vintage(hub: Path, candidate: date, cache: Path) -> None:
+            raise rolling_module.NoUsableVintageError("none for origin")
+
+        monkeypatch.setattr(rolling_module, "resolve_usable_vintage", no_vintage)
+        check = _default_vintage_check(tmp_path / "hub", tmp_path / "cache")
+        assert check(date(2026, 9, 5)) is False
+
+    def test_hub_drift_keyerror_propagates_never_masquerades_as_skip(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        # Adversarial finding: KeyError is a LookupError subclass — a hub-side
+        # schema drift was swallowed as "no usable vintage", turning the shadow
+        # job green forever. Drift must crash the run red, not read as skip.
+        import prime_radiant.epi.backtest.rolling as rolling_module
+
+        def hub_drift(hub: Path, candidate: date, cache: Path) -> None:
+            raise KeyError("date")
+
+        monkeypatch.setattr(rolling_module, "resolve_usable_vintage", hub_drift)
+        check = _default_vintage_check(tmp_path / "hub", tmp_path / "cache")
+        with pytest.raises(KeyError):
+            check(date(2026, 9, 5))
+
+    def test_usable_vintage_reads_as_true(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        import prime_radiant.epi.backtest.rolling as rolling_module
+
+        monkeypatch.setattr(
+            rolling_module, "resolve_usable_vintage", lambda hub, candidate, cache: object()
+        )
+        check = _default_vintage_check(tmp_path / "hub", tmp_path / "cache")
+        assert check(date(2026, 9, 5)) is True
