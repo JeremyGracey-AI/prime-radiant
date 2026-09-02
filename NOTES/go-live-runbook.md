@@ -78,7 +78,11 @@ Jeremy's explicit go. Verified facts as of 2026-08-31.
   2026-07-09) the job exits 3 = green run + "Shadow skip" step summary. The
   week the hub resumes publishing truth (2025 precedent: Sep 5), validated
   shadow CSVs start landing in `shadow-output/` via `[cron] chore(shadow)`
-  commits — the season baseline arms itself, no action needed.
+  commits — the season baseline arms itself, no action needed. STATED GAP: the
+  runner proof exercised only the exit-3 skip; the validate -> commit ->
+  token-URL push sequence has never executed on a runner (preconditions
+  verified: ruleset permits the push, job log shows Contents:write granted)
+  and first runs unattended the week the hub wakes — check that first commit.
 - **hub-config-watch.yml**: daily 13:23 UTC check of the hub's live tasks.json
   for reference dates beyond LAST_KNOWN_MAX=2026-05-30. On the 2026-27 config
   landing it opens ONE repo issue with the go-live checklist (metadata schema
