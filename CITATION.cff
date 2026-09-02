@@ -8,7 +8,7 @@ authors:
     email: jeremy.a.gracey@gmail.com
 version: 0.1.0
 date-released: 2026-08-31
-license: MIT
+license: Apache-2.0
 repository-code: "https://github.com/JeremyGracey-AI/prime-radiant"
 url: "https://huggingface.co/spaces/jeremygracey-ai/prime-radiant"
 abstract: >-

@@ -2,7 +2,7 @@
 
 [![ci](https://github.com/JeremyGracey-AI/prime-radiant/actions/workflows/ci.yml/badge.svg)](https://github.com/JeremyGracey-AI/prime-radiant/actions/workflows/ci.yml)
 [![AI-USE: declared](https://img.shields.io/badge/AI--USE-declared-2ea44f)](./AI-USE.md)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![Dashboard](https://img.shields.io/badge/%F0%9F%A4%97%20Space-live-blue)](https://huggingface.co/spaces/jeremygracey-ai/prime-radiant)
 [![docs](https://img.shields.io/badge/docs-live-2ea44f)](https://jeremygracey-ai.github.io/prime-radiant/)
 [![PyPI](https://img.shields.io/pypi/v/prime-radiant)](https://pypi.org/project/prime-radiant/)

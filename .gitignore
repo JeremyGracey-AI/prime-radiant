@@ -24,3 +24,6 @@ site/
 
 # Shadow-run scratch (only the validated CSV in shadow-output/ is committed)
 shadow-scratch/
+
+# social clips rendered by scripts/record_sentinel.py — regenerate, do not commit
+reports/*.mp4
