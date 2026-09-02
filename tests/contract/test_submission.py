@@ -165,6 +165,29 @@ class TestValidateSubmission:
         with pytest.raises(SubmissionInvalidError, match="schema violation"):
             validate_submission(frame, TASKS_JSON)
 
+    def test_shadow_mode_accepts_unenumerated_reference_date(self) -> None:
+        # Off-season shadow forecasts target the CURRENT week, which tasks.json
+        # does not enumerate until the new season's config lands.
+        frame = build_submission_frame(_model_quantiles(), date(2022, 1, 8))
+        validate_submission(frame, TASKS_JSON, require_enumerated_round=False)
+
+    def test_shadow_mode_still_enforces_every_other_check(self) -> None:
+        # Relaxing round membership must not relax anything else.
+        frame = build_submission_frame(_model_quantiles(), date(2022, 1, 8))
+        frame.loc[frame.index[0], "output_type_id"] = 0.02  # not a hub level
+        with pytest.raises(SubmissionInvalidError, match="quantile"):
+            validate_submission(frame, TASKS_JSON, require_enumerated_round=False)
+
+    def test_shadow_mode_still_enforces_population_ceiling(self) -> None:
+        locations = Path(__file__).parent.parent / "fixtures" / "locations.csv"
+        frame = build_submission_frame(_model_quantiles(), date(2022, 1, 8))
+        ca_rows = frame.index[frame["location"] == "06"]
+        frame.loc[ca_rows[-1], "value"] = 50_000_000
+        with pytest.raises(SubmissionInvalidError, match="population"):
+            validate_submission(
+                frame, TASKS_JSON, locations_csv=locations, require_enumerated_round=False
+            )
+
     def test_missing_primary_target_fails_loudly(self, tmp_path: Path) -> None:
         import json
 

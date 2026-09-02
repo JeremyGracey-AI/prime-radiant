@@ -38,14 +38,22 @@ def _allowed(task: dict, task_id: str) -> set:
 
 
 def validate_submission(
-    frame: pd.DataFrame, tasks_json_path: Path, locations_csv: Path | None = None
+    frame: pd.DataFrame,
+    tasks_json_path: Path,
+    locations_csv: Path | None = None,
+    require_enumerated_round: bool = True,
 ) -> None:
     task = _primary_task(tasks_json_path)
 
-    allowed_dates = _allowed(task, "reference_date")
-    frame_dates = {d.date().isoformat() for d in pd.to_datetime(frame["reference_date"])}
-    if unknown := frame_dates - allowed_dates:
-        raise SubmissionInvalidError(f"reference_date(s) not a hub round: {sorted(unknown)}")
+    if require_enumerated_round:
+        allowed_dates = _allowed(task, "reference_date")
+        frame_dates = {d.date().isoformat() for d in pd.to_datetime(frame["reference_date"])}
+        if unknown := frame_dates - allowed_dates:
+            raise SubmissionInvalidError(f"reference_date(s) not a hub round: {sorted(unknown)}")
+    # require_enumerated_round=False is the SHADOW mode: off-season current-week
+    # forecasts target a round tasks.json does not enumerate yet. Only this one
+    # membership check is relaxed — every other hub-contract check still runs,
+    # and nothing on the live submission path ever passes False.
 
     try:
         hub_levels = set(task["output_type"]["quantile"]["output_type_id"]["required"])
