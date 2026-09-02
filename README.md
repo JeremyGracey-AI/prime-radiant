@@ -12,6 +12,10 @@
 and live in three days, with the complete adversarial ledger:
 **[The Prime Radiant Record (PDF)](docs/prime-radiant-record.pdf)**
 
+**📡 The Sentinel** — the 2025-26 season replayed: every state, every week,
+flagged ahead. **[Watch it](https://jeremygracey.ai/prime-radiant/sentinel/)** ·
+**[docs mirror](https://jeremygracey-ai.github.io/prime-radiant/sentinel.html)**
+
 **🧭 The codebase walkthrough** — the map, the forecast pipeline, and the gated
 automation, drawn: **[live page](https://jeremygracey-ai.github.io/prime-radiant/prime-radiant-codebase.html)**
 · **[docs/codebase-walkthrough.md](docs/codebase-walkthrough.md)**
