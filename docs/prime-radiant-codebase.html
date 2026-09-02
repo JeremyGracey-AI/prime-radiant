@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Prime Radiant Codebase</title>
+<meta name="description" content="The prime-radiant repository drawn in three passes — the module map, the weekly forecast pipeline, and the gated automation — ending at the self-arming season timeline.">
+<meta property="og:title" content="The Prime Radiant Codebase">
+<meta property="og:description" content="A CDC FluSight forecaster, drawn: the map, the pipeline, the gates, and a season that starts itself.">
+<meta property="og:type" content="article">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>">
+</head>
+<body style="margin:0">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:wght@600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper: #faf9f5;
+    --surface: #ffffff;
+    --ink: #23272e;
+    --muted: #6e6a63;
+    --border: #e5e0d8;
+    --accent: #b45309;
+    --green: #15803d;
+    --accent-soft: #fdf3e7;
+    --green-soft: #ecf7ef;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #20242b;
+      --surface: #262b33;
+      --ink: #e9e7e2;
+      --muted: #a8a49b;
+      --border: #3a4048;
+      --accent: #e09b4c;
+      --green: #56b381;
+      --accent-soft: #33301f;
+      --green-soft: #24322a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #20242b;
+    --surface: #262b33;
+    --ink: #e9e7e2;
+    --muted: #a8a49b;
+    --border: #3a4048;
+    --accent: #e09b4c;
+    --green: #56b381;
+    --accent-soft: #33301f;
+    --green-soft: #24322a;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.65;
+    margin: 0;
+  }
+  main { max-width: 980px; margin: 0 auto; padding: 48px 28px 80px; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font-family: Spectral, Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(34px, 5.5vw, 52px);
+    line-height: 1.12;
+    margin: 10px 0 14px;
+    text-wrap: balance;
+  }
+  .dek { font-size: 20px; color: var(--muted); max-width: 46em; margin: 0 0 26px; }
+  .statband {
+    display: flex; flex-wrap: wrap; gap: 10px 28px;
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    padding: 14px 2px; margin: 0 0 8px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13.5px;
+  }
+  .statband b { color: var(--green); font-weight: 500; }
+  .statband .amber { color: var(--accent); }
+
+  section { margin-top: 64px; }
+  .sec-eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .sec-eyebrow b { color: var(--accent); font-weight: 500; }
+  h2 {
+    font-family: Spectral, Georgia, serif; font-weight: 600;
+    font-size: 30px; line-height: 1.2; margin: 6px 0 14px; text-wrap: balance;
+  }
+  p { max-width: 46em; margin: 0 0 16px; }
+  code, .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.86em; }
+  code { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+  strong { font-weight: 600; }
+
+  figure { margin: 28px 0; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  figcaption {
+    font-size: 14.5px; color: var(--muted); max-width: 52em;
+    margin-top: 10px; padding-left: 14px; border-left: 3px solid var(--border);
+  }
+  .figframe {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 22px 18px; overflow-x: auto;
+  }
+
+  /* ---- diagram vocabulary ---- */
+  .d-box   { fill: var(--paper); stroke: var(--ink); stroke-width: 1.3; }
+  .d-soft  { fill: var(--surface); stroke: var(--muted); stroke-width: 1; }
+  .d-amber { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.8; }
+  .d-green { fill: var(--green-soft); stroke: var(--green); stroke-width: 1.6; }
+  .d-container { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 5 5; }
+  .d-line  { stroke: var(--ink); stroke-width: 1.3; fill: none; }
+  .d-dash  { stroke: var(--green); stroke-width: 1.3; fill: none; stroke-dasharray: 5 4; }
+  .d-t     { font-family: "Source Sans 3", system-ui, sans-serif; font-size: 13px; fill: var(--ink); }
+  .d-tb    { font-family: "Source Sans 3", system-ui, sans-serif; font-size: 13.5px; font-weight: 600; fill: var(--ink); }
+  .d-m     { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11px; fill: var(--muted); }
+  .d-ma    { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11px; fill: var(--accent); }
+  .d-mg    { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11px; fill: var(--green); }
+  .d-arrow { fill: var(--ink); }
+  .d-arrow-g { fill: var(--green); }
+
+  table {
+    border-collapse: collapse; width: 100%; margin: 20px 0 8px;
+    font-size: 15.5px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+  }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 500;
+  }
+  tr:last-child td { border-bottom: none; }
+  td.who { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; white-space: nowrap; }
+  td .ok { color: var(--green); font-weight: 600; }
+
+  footer {
+    margin-top: 72px; padding-top: 18px; border-top: 1px solid var(--border);
+    font-size: 14px; color: var(--muted);
+  }
+  footer a { color: var(--accent); }
+  a { color: var(--accent); }
+
+  @media print {
+    :root, :root[data-theme="dark"] {
+      --paper: #ffffff; --surface: #faf9f5; --ink: #23272e; --muted: #6e6a63;
+      --border: #d8d3ca; --accent: #b45309; --green: #15803d;
+      --accent-soft: #fdf3e7; --green-soft: #ecf7ef;
+    }
+    body { font-size: 13px; }
+    main { max-width: none; padding: 0 10mm; }
+    section { margin-top: 34px; }
+    figure, table { break-inside: avoid-page; }
+    .sec-eyebrow, h2 { break-after: avoid-page; }
+    .figframe { overflow: visible; }
+    h1 { font-size: 34px; }
+    .dek { font-size: 16px; }
+  }
+</style>
+
+<main>
+<header>
+  <div class="eyebrow">Prime Radiant · Repository Guide</div>
+  <h1>The Prime Radiant Codebase</h1>
+  <p class="dek">Three passes over one repository: the map, the machine, and the
+  nervous system that runs it — ending where the project goes next: a season
+  that starts itself.</p>
+  <div class="statband">
+    <span>38 modules</span>
+    <span><b>379 tests · 100.00% coverage</b></span>
+    <span class="amber">15 mutants run &amp; killed</span>
+    <span>4 surfaces live</span>
+    <span>gate: <b>make check</b></span>
+  </div>
+</header>
+
+<section>
+  <div class="sec-eyebrow"><b>01</b> · The map</div>
+  <h2>Where everything lives</h2>
+  <p>Everything interesting is one Python package plus four surfaces that
+  consume it. The pipeline across the top row is the product; the row beneath
+  it is the proof.</p>
+
+  <figure>
+    <div class="figframe">
+    <svg viewBox="0 0 900 340" role="img" aria-label="Repository map: the src/prime_radiant package flows from cli through data, features, models and submission to the CDC hub; a backtest and eval chain feeds the serve bundle and dashboard; the package publishes to PyPI and docs deploy to Pages.">
+      <defs>
+        <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" class="d-arrow"/>
+        </marker>
+        <marker id="a1g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" class="d-arrow-g"/>
+        </marker>
+      </defs>
+
+      <rect x="20" y="34" width="580" height="256" rx="8" class="d-container"/>
+      <text x="34" y="56" class="d-ma">src/prime_radiant</text>
+
+      <!-- pipeline row -->
+      <rect x="40"  y="72" width="88"  height="46" rx="6" class="d-box"/>
+      <text x="84"  y="91" text-anchor="middle" class="d-tb">cli.py</text>
+      <text x="84"  y="107" text-anchor="middle" class="d-m">front door</text>
+
+      <rect x="152" y="72" width="88"  height="46" rx="6" class="d-box"/>
+      <text x="196" y="91" text-anchor="middle" class="d-tb">epi/data</text>
+      <text x="196" y="107" text-anchor="middle" class="d-m">hub·vintages</text>
+
+      <rect x="264" y="72" width="88"  height="46" rx="6" class="d-box"/>
+      <text x="308" y="91" text-anchor="middle" class="d-tb">features</text>
+      <text x="308" y="107" text-anchor="middle" class="d-m">lags·seasonal</text>
+
+      <rect x="376" y="72" width="88"  height="46" rx="6" class="d-box"/>
+      <text x="420" y="91" text-anchor="middle" class="d-tb">models</text>
+      <text x="420" y="107" text-anchor="middle" class="d-m">gbm·baseline</text>
+
+      <rect x="488" y="72" width="96"  height="46" rx="6" class="d-box"/>
+      <text x="536" y="91" text-anchor="middle" class="d-tb">submission</text>
+      <text x="536" y="107" text-anchor="middle" class="d-m">hub contract</text>
+
+      <line x1="128" y1="95" x2="150" y2="95" class="d-line" marker-end="url(#a1)"/>
+      <line x1="240" y1="95" x2="262" y2="95" class="d-line" marker-end="url(#a1)"/>
+      <line x1="352" y1="95" x2="374" y2="95" class="d-line" marker-end="url(#a1)"/>
+      <line x1="464" y1="95" x2="486" y2="95" class="d-line" marker-end="url(#a1)"/>
+
+      <!-- proof row -->
+      <rect x="40"  y="160" width="150" height="46" rx="6" class="d-soft"/>
+      <text x="115" y="179" text-anchor="middle" class="d-tb">backtest/</text>
+      <text x="115" y="195" text-anchor="middle" class="d-m">rolling · report</text>
+
+      <rect x="230" y="160" width="140" height="46" rx="6" class="d-soft"/>
+      <text x="300" y="179" text-anchor="middle" class="d-tb">eval/</text>
+      <text x="300" y="195" text-anchor="middle" class="d-m">wis · scoring</text>
+
+      <rect x="40" y="232" width="150" height="46" rx="6" class="d-soft"/>
+      <text x="115" y="251" text-anchor="middle" class="d-tb">serve/bundle</text>
+      <text x="115" y="267" text-anchor="middle" class="d-m">offline snapshot</text>
+
+      <line x1="190" y1="183" x2="228" y2="183" class="d-line" marker-end="url(#a1)"/>
+      <text x="209" y="176" text-anchor="middle" class="d-m">scores</text>
+      <line x1="115" y1="206" x2="115" y2="230" class="d-line" marker-end="url(#a1)"/>
+      <polyline points="420,118 420,183 374,183" class="d-line" marker-end="url(#a1)"/>
+      <text x="446" y="140" class="d-m">replayed over 55 origins</text>
+
+      <!-- surfaces column -->
+      <text x="660" y="56" class="d-m">surfaces</text>
+      <rect x="660" y="64" width="212" height="46" rx="6" class="d-amber"/>
+      <text x="766" y="83" text-anchor="middle" class="d-tb">CDC FluSight hub</text>
+      <text x="766" y="99" text-anchor="middle" class="d-m">weekly PR · gated</text>
+
+      <rect x="660" y="130" width="212" height="46" rx="6" class="d-soft"/>
+      <text x="766" y="149" text-anchor="middle" class="d-tb">PyPI · prime-radiant</text>
+      <text x="766" y="165" text-anchor="middle" class="d-m">trusted publishing</text>
+
+      <rect x="660" y="196" width="212" height="46" rx="6" class="d-soft"/>
+      <text x="766" y="215" text-anchor="middle" class="d-tb">HF Space dashboard</text>
+      <text x="766" y="231" text-anchor="middle" class="d-m">gradio · no network</text>
+
+      <rect x="660" y="262" width="212" height="46" rx="6" class="d-soft"/>
+      <text x="766" y="281" text-anchor="middle" class="d-tb">GitHub Pages docs</text>
+      <text x="766" y="297" text-anchor="middle" class="d-m">mkdocs material</text>
+
+      <line x1="584" y1="90"  x2="658" y2="87"  class="d-line" marker-end="url(#a1)"/>
+      <line x1="600" y1="153" x2="658" y2="153" class="d-line" marker-end="url(#a1)"/>
+      <text x="628" y="146" text-anchor="middle" class="d-m">uv build</text>
+      <line x1="190" y1="255" x2="658" y2="222" class="d-line" marker-end="url(#a1)"/>
+      <text x="420" y="232" text-anchor="middle" class="d-m">serve_data/ committed</text>
+      <line x1="300" y1="290" x2="658" y2="288" class="d-dash" marker-end="url(#a1g)"/>
+      <text x="330" y="282" class="d-mg">docs/ describe it all</text>
+    </svg>
+    </div>
+    <figcaption><b>Figure 1.</b> The package and its surfaces. Top row is the
+    weekly product path; the middle row is the evidence machinery that replays
+    the same code over history. Amber marks the one outward-facing, gated
+    surface.</figcaption>
+  </figure>
+
+  <p>Reading order for a newcomer: <code>epi/cli.py</code> is the front door —
+  three subcommands (<code>forecast</code>, <code>validate</code>,
+  <code>bundle</code>), everything else hangs off them. <code>epi/data</code>
+  gets and time-scopes the data, <code>features</code>/<code>models</code> do
+  the machine learning, <code>submission</code> speaks the hub's contract,
+  <code>backtest</code> + <code>eval</code> prove the model honest, and
+  <code>serve</code> packages results for the dashboard. At the top level,
+  <code>tests/</code> mirrors all of it at 100% coverage,
+  <code>scripts/open_hub_pr.sh</code> is the one shell dependency, and
+  <code>NOTES/</code> is the project's memory.</p>
+</section>
+
+<section>
+  <div class="sec-eyebrow"><b>02</b> · The heart</div>
+  <h2>What one weekly forecast computes</h2>
+  <p>The load-bearing idea is <strong>vintage discipline</strong>: the model
+  must never see data dated after the forecast origin. So the data layer is
+  built on git archaeology — checking out the truth file <em>as it existed</em>
+  on a past date — rather than "download latest".</p>
+
+  <figure>
+    <div class="figframe">
+    <svg viewBox="0 0 720 700" role="img" aria-label="The forecast pipeline: hub clone, as-of vintage checkout, the usability guard, feature assembly, two models whose quantiles are combined by a per-quantile median ensemble, integer submission shaping, validation against the live hub config, and the final CSV.">
+      <defs>
+        <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" class="d-arrow"/>
+        </marker>
+      </defs>
+
+      <rect x="60" y="16" width="360" height="46" rx="6" class="d-box"/>
+      <text x="240" y="35" text-anchor="middle" class="d-tb">ensure_hub_clone</text>
+      <text x="240" y="51" text-anchor="middle" class="d-m">data/hub.py · blobless clone of the CDC hub</text>
+
+      <rect x="60" y="94" width="360" height="46" rx="6" class="d-box"/>
+      <text x="240" y="113" text-anchor="middle" class="d-tb">as_of(date)</text>
+      <text x="240" y="129" text-anchor="middle" class="d-m">data/vintages.py · git history = time machine</text>
+
+      <rect x="60" y="172" width="360" height="60" rx="6" class="d-amber"/>
+      <text x="240" y="193" text-anchor="middle" class="d-tb">resolve_usable_vintage — THE GUARD</text>
+      <text x="240" y="209" text-anchor="middle" class="d-m">walk back 3→10 days · ≥52 wks history · ≤14 days fresh</text>
+      <text x="240" y="224" text-anchor="middle" class="d-ma">honest miss = NoUsableVintageError, nothing else</text>
+
+      <rect x="60" y="264" width="360" height="46" rx="6" class="d-box"/>
+      <text x="240" y="283" text-anchor="middle" class="d-tb">features/ · assemble</text>
+      <text x="240" y="299" text-anchor="middle" class="d-m">4th-root admission rates · lags · seasonal terms</text>
+
+      <rect x="60" y="344" width="170" height="52" rx="6" class="d-box"/>
+      <text x="145" y="364" text-anchor="middle" class="d-tb">lgbm_quantile</text>
+      <text x="145" y="380" text-anchor="middle" class="d-m">pooled GBM · 23 q</text>
+
+      <rect x="250" y="344" width="170" height="52" rx="6" class="d-box"/>
+      <text x="335" y="364" text-anchor="middle" class="d-tb">baseline</text>
+      <text x="335" y="380" text-anchor="middle" class="d-m">replica · relWIS 1.0000</text>
+
+      <rect x="60" y="430" width="360" height="48" rx="6" class="d-green"/>
+      <text x="240" y="450" text-anchor="middle" class="d-tb">ensemble — what gets submitted</text>
+      <text x="240" y="466" text-anchor="middle" class="d-m">per-quantile MEDIAN of the two</text>
+
+      <rect x="60" y="510" width="360" height="46" rx="6" class="d-box"/>
+      <text x="240" y="529" text-anchor="middle" class="d-tb">shape the submission</text>
+      <text x="240" y="545" text-anchor="middle" class="d-m">sorted integer quantiles · 8-column hub frame</text>
+
+      <rect x="60" y="588" width="360" height="48" rx="6" class="d-box"/>
+      <text x="240" y="608" text-anchor="middle" class="d-tb">validate — against the LIVE hub config</text>
+      <text x="240" y="624" text-anchor="middle" class="d-m">round · levels · locations · horizons · counts&lt;popn · schema</text>
+
+      <rect x="60" y="662" width="360" height="34" rx="6" class="d-soft"/>
+      <text x="240" y="683" text-anchor="middle" class="d-ma">&lt;saturday&gt;-JGracey-prime_radiant.csv</text>
+
+      <line x1="240" y1="62"  x2="240" y2="92"  class="d-line" marker-end="url(#a2)"/>
+      <line x1="240" y1="140" x2="240" y2="170" class="d-line" marker-end="url(#a2)"/>
+      <line x1="240" y1="232" x2="240" y2="262" class="d-line" marker-end="url(#a2)"/>
+      <line x1="145" y1="310" x2="145" y2="342" class="d-line" marker-end="url(#a2)"/>
+      <line x1="335" y1="310" x2="335" y2="342" class="d-line" marker-end="url(#a2)"/>
+      <line x1="145" y1="396" x2="145" y2="410" class="d-line"/>
+      <line x1="335" y1="396" x2="335" y2="410" class="d-line"/>
+      <polyline points="145,410 335,410" class="d-line"/>
+      <line x1="240" y1="410" x2="240" y2="428" class="d-line" marker-end="url(#a2)"/>
+      <line x1="240" y1="478" x2="240" y2="508" class="d-line" marker-end="url(#a2)"/>
+      <line x1="240" y1="556" x2="240" y2="586" class="d-line" marker-end="url(#a2)"/>
+      <line x1="240" y1="636" x2="240" y2="660" class="d-line" marker-end="url(#a2)"/>
+
+      <text x="445" y="83"  class="d-m">never "download latest"</text>
+      <text x="445" y="160" class="d-m">Wednesday-anchored, strictly</text>
+      <text x="445" y="174" class="d-m">earlier-only fallback</text>
+      <text x="445" y="252" class="d-ma">the guard is never relaxed —</text>
+      <text x="445" y="266" class="d-ma">not for backtests, not for shadow</text>
+      <text x="445" y="372" class="d-m">same feature matrix to both</text>
+      <text x="445" y="455" class="d-m">wins the 2025-26 three-season</text>
+      <text x="445" y="469" class="d-m">league: WIS 0.609 vs 0.625</text>
+      <text x="445" y="606" class="d-m">contract drift on the hub side</text>
+      <text x="445" y="620" class="d-m">fails loudly, before any PR</text>
+    </svg>
+    </div>
+    <figcaption><b>Figure 2.</b> One weekly run, top to bottom. The amber guard
+    is the mechanism the whole design leans on: it decides what data is
+    honestly usable, and it fails with its own exception type so nothing else
+    can masquerade as an off-season skip.</figcaption>
+  </figure>
+
+  <p>The same <code>run_origin</code> function drives live forecasts and the
+  historical backtests: <code>backtest/rolling.py</code> replays it across 55
+  past origins, <code>eval/wis.py</code> scores each with the hub's own metric,
+  and <code>serve/bundle.py</code> snapshots the results into the offline
+  bundle the dashboard serves. One code path — so a backtest win means
+  something about the live path.</p>
+</section>
+
+<section>
+  <div class="sec-eyebrow"><b>03</b> · The nervous system</div>
+  <h2>How it runs itself, and where the gates are</h2>
+  <p>Two cron schedules do the routine work; a human dispatch — behind four
+  simultaneous conditions — is the only way anything reaches the hub. The
+  design rule throughout: <strong>every gate is structure, not prose</strong>,
+  and each structural claim has a test that a mutant provably fails.</p>
+
+  <figure>
+    <div class="figframe">
+    <svg viewBox="0 0 960 480" role="img" aria-label="Automation map: the Tuesday cron runs the dry-run and shadow jobs; only a manual dispatch that passes four gates reaches live-submit and the hub PR; the daily watcher checks the hub config and files one issue when the new season lands.">
+      <defs>
+        <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" class="d-arrow"/>
+        </marker>
+        <marker id="a3g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" class="d-arrow-g"/>
+        </marker>
+      </defs>
+
+      <!-- triggers -->
+      <rect x="20" y="52" width="160" height="44" rx="6" class="d-soft"/>
+      <text x="100" y="71" text-anchor="middle" class="d-tb">cron · Tue 22:17</text>
+      <text x="100" y="87" text-anchor="middle" class="d-m">weekly-forecast.yml</text>
+
+      <rect x="20" y="150" width="160" height="44" rx="6" class="d-amber"/>
+      <text x="100" y="169" text-anchor="middle" class="d-tb">manual dispatch</text>
+      <text x="100" y="185" text-anchor="middle" class="d-m">a human, deliberately</text>
+
+      <rect x="20" y="368" width="160" height="44" rx="6" class="d-soft"/>
+      <text x="100" y="387" text-anchor="middle" class="d-tb">cron · daily 13:23</text>
+      <text x="100" y="403" text-anchor="middle" class="d-m">hub-config-watch.yml</text>
+
+      <!-- dry-run row -->
+      <rect x="240" y="30" width="180" height="60" rx="6" class="d-box"/>
+      <text x="330" y="52" text-anchor="middle" class="d-tb">dry-run job</text>
+      <text x="330" y="68" text-anchor="middle" class="d-m">forecast auto → validate</text>
+      <text x="330" y="81" text-anchor="middle" class="d-m">→ render metadata</text>
+
+      <rect x="470" y="38" width="130" height="44" rx="6" class="d-soft"/>
+      <text x="535" y="57" text-anchor="middle" class="d-tb">artifact</text>
+      <text x="535" y="73" text-anchor="middle" class="d-m">CSV + metadata yml</text>
+
+      <rect x="640" y="30" width="180" height="60" rx="6" class="d-box"/>
+      <text x="730" y="52" text-anchor="middle" class="d-tb">live-submit job</text>
+      <text x="730" y="68" text-anchor="middle" class="d-m">open_hub_pr.sh · freshness</text>
+      <text x="730" y="81" text-anchor="middle" class="d-m">gate · idempotent retry</text>
+
+      <rect x="640" y="130" width="180" height="52" rx="6" class="d-amber"/>
+      <text x="730" y="151" text-anchor="middle" class="d-tb">PR → cdcepi hub</text>
+      <text x="730" y="167" text-anchor="middle" class="d-m">bundles metadata if needed</text>
+
+      <!-- gate pill -->
+      <rect x="452" y="132" width="160" height="66" rx="10" class="d-amber"/>
+      <text x="532" y="152" text-anchor="middle" class="d-ma">ALL FOUR REQUIRED</text>
+      <text x="532" y="168" text-anchor="middle" class="d-m">dispatch · live=true</text>
+      <text x="532" y="182" text-anchor="middle" class="d-m">LIVE='1' · PAT secret</text>
+
+      <!-- shadow row -->
+      <rect x="240" y="212" width="180" height="72" rx="6" class="d-box"/>
+      <text x="330" y="234" text-anchor="middle" class="d-tb">shadow job</text>
+      <text x="330" y="250" text-anchor="middle" class="d-m">forecast --shadow</text>
+      <text x="330" y="264" text-anchor="middle" class="d-m">current week · guard unrelaxed</text>
+
+      <rect x="470" y="204" width="180" height="40" rx="6" class="d-soft"/>
+      <text x="560" y="221" text-anchor="middle" class="d-t">truth stale → exit 3</text>
+      <text x="560" y="236" text-anchor="middle" class="d-m">green skip + summary note</text>
+
+      <rect x="470" y="256" width="180" height="40" rx="6" class="d-green"/>
+      <text x="560" y="273" text-anchor="middle" class="d-t">truth fresh → commit</text>
+      <text x="560" y="288" text-anchor="middle" class="d-mg">shadow-output/ baseline</text>
+
+      <rect x="700" y="256" width="200" height="40" rx="6" class="d-green"/>
+      <text x="800" y="273" text-anchor="middle" class="d-tb">season baseline</text>
+      <text x="800" y="288" text-anchor="middle" class="d-mg">arms itself · no action</text>
+
+      <!-- watcher row -->
+      <rect x="240" y="352" width="200" height="64" rx="6" class="d-box"/>
+      <text x="340" y="374" text-anchor="middle" class="d-tb">watcher</text>
+      <text x="340" y="390" text-anchor="middle" class="d-m">rounds beyond 2026-05-30?</text>
+      <text x="340" y="404" text-anchor="middle" class="d-m">zero parsed = RED, not quiet</text>
+
+      <rect x="490" y="360" width="190" height="48" rx="6" class="d-amber"/>
+      <text x="585" y="380" text-anchor="middle" class="d-tb">ONE open issue</text>
+      <text x="585" y="396" text-anchor="middle" class="d-m">the go-live checklist</text>
+
+      <!-- arrows -->
+      <line x1="180" y1="66" x2="238" y2="58" class="d-line" marker-end="url(#a3)"/>
+      <line x1="180" y1="84" x2="238" y2="234" class="d-line" marker-end="url(#a3)"/>
+      <line x1="420" y1="60" x2="468" y2="60" class="d-line" marker-end="url(#a3)"/>
+      <line x1="600" y1="60" x2="638" y2="60" class="d-line" marker-end="url(#a3)"/>
+      <line x1="180" y1="172" x2="450" y2="168" class="d-line" marker-end="url(#a3)"/>
+      <line x1="612" y1="158" x2="638" y2="152" class="d-line" marker-end="url(#a3)"/>
+      <text x="625" y="125" text-anchor="middle" class="d-ma">unlocks</text>
+      <line x1="730" y1="90" x2="730" y2="128" class="d-line" marker-end="url(#a3)"/>
+      <text x="744" y="106" class="d-m">missing PAT = RED,</text>
+      <text x="744" y="120" class="d-m">never silent-green</text>
+      <line x1="420" y1="230" x2="468" y2="224" class="d-line" marker-end="url(#a3)"/>
+      <line x1="420" y1="262" x2="468" y2="272" class="d-line" marker-end="url(#a3)"/>
+      <line x1="650" y1="276" x2="698" y2="276" class="d-dash" marker-end="url(#a3g)"/>
+      <text x="674" y="268" text-anchor="middle" class="d-mg">weekly</text>
+      <line x1="180" y1="390" x2="238" y2="384" class="d-line" marker-end="url(#a3)"/>
+      <line x1="440" y1="384" x2="488" y2="384" class="d-line" marker-end="url(#a3)"/>
+      <text x="464" y="344" text-anchor="middle" class="d-ma">fires ~Sep</text>
+    </svg>
+    </div>
+    <figcaption><b>Figure 3.</b> The automation. Cron reaches only the honest
+    paths; the hub PR sits behind four simultaneous conditions, and the one
+    scary failure mode — quietly looking fine — is engineered out at each
+    step.</figcaption>
+  </figure>
+
+  <p>This layer was adversarially reviewed by a four-refuter panel; every
+  demonstrated defect was fixed with a regression test and a mutant proof:</p>
+
+  <table>
+    <thead><tr><th>Demonstrated finding</th><th>Structural fix</th></tr></thead>
+    <tbody>
+      <tr><td>Hub schema drift (a <code>KeyError</code>) masqueraded as an eternal "off-season skip"</td>
+          <td><span class="ok">✓</span> The guard's miss is its own exception type; drift now fails red</td></tr>
+      <tr><td>No freshness gate — a live dispatch would have submitted a months-stale round, green</td>
+          <td><span class="ok">✓</span> The PR script refuses any reference date outside 0–13 days out</td></tr>
+      <tr><td>A same-week retry after a partial failure dead-ended on the stranded fork branch</td>
+          <td><span class="ok">✓</span> Force-push to the disposable branch; skip create if the PR exists</td></tr>
+      <tr><td>A hub config restructure read as "no news", green, forever</td>
+          <td><span class="ok">✓</span> Zero parsed dates now fails the watcher red</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <div class="sec-eyebrow"><b>04</b> · The next step</div>
+  <h2>The season starts itself</h2>
+  <p>Nothing can forecast the current week until the hub's own truth data
+  resumes — dormant since July 9, and by three seasons of precedent it wakes in
+  September, the same week the new season's config lands. Everything below the
+  line is already running; everything above it waits on exactly one person.</p>
+
+  <figure>
+    <div class="figframe">
+    <svg viewBox="0 0 900 170" role="img" aria-label="Season timeline: the shadow job and watcher run now; the config drop expected in September arms the baseline and files the go-live issue; the first submission window is possibly mid-October and guaranteed by November 18, on an explicit go.">
+      <defs>
+        <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" class="d-arrow"/>
+        </marker>
+      </defs>
+      <line x1="50" y1="100" x2="860" y2="100" class="d-line" marker-end="url(#a4)"/>
+      <line x1="50" y1="100" x2="300" y2="100" style="stroke: var(--green); stroke-width: 3;"/>
+
+      <circle cx="80"  cy="100" r="6" style="fill: var(--green);"/>
+      <text x="80"  y="76" text-anchor="middle" class="d-tb">now</text>
+      <text x="80"  y="126" text-anchor="middle" class="d-m">shadow + watcher</text>
+      <text x="80"  y="140" text-anchor="middle" class="d-m">running weekly / daily</text>
+
+      <circle cx="300" cy="100" r="6" style="fill: var(--green);"/>
+      <text x="300" y="62" text-anchor="middle" class="d-tb">~September</text>
+      <text x="300" y="78" text-anchor="middle" class="d-m">config drop · precedent Sep 5–30</text>
+      <text x="300" y="126" text-anchor="middle" class="d-mg">watcher files its issue</text>
+      <text x="300" y="140" text-anchor="middle" class="d-mg">baseline starts landing</text>
+
+      <circle cx="560" cy="100" r="6" style="fill: var(--accent);"/>
+      <text x="560" y="76" text-anchor="middle" class="d-tb">mid–late October</text>
+      <text x="560" y="126" text-anchor="middle" class="d-ma">earliest real submission</text>
+      <text x="560" y="140" text-anchor="middle" class="d-m">if windows open · 2 of 3 years</text>
+
+      <circle cx="800" cy="100" r="6" style="fill: var(--accent);"/>
+      <text x="800" y="76" text-anchor="middle" class="d-tb">~Nov 18</text>
+      <text x="800" y="126" text-anchor="middle" class="d-ma">guaranteed open</text>
+      <text x="800" y="140" text-anchor="middle" class="d-m">explicit go only</text>
+    </svg>
+    </div>
+    <figcaption><b>Figure 4.</b> The road to the first live submission. Green
+    is autonomous and already in motion; amber requires a deliberate human
+    dispatch through the four gates.</figcaption>
+  </figure>
+
+  <table>
+    <thead><tr><th>When</th><th>What fires</th><th>Whose action</th></tr></thead>
+    <tbody>
+      <tr><td>Now</td><td>Shadow job green-skips weekly; watcher checks the hub config daily</td><td class="who">none</td></tr>
+      <tr><td>~Sep</td><td>Config lands → watcher opens its issue; truth resumes → shadow CSVs land in <code>shadow-output/</code></td><td class="who">none</td></tr>
+      <tr><td>The gap</td><td>PAT + <code>LIVE=1</code> set; dry-run dispatched against a real new-season round</td><td class="who">operator</td></tr>
+      <tr><td>First window</td><td>First real submission — explicit go only</td><td class="who">operator</td></tr>
+      <tr><td>~Nov 18</td><td>Guaranteed open: mass season start</td><td class="who">operator</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer>
+  Part of the Prime Radiant build series ·
+  <a href="https://github.com/JeremyGracey-AI/prime-radiant">github.com/JeremyGracey-AI/prime-radiant</a> ·
+  companion to <em>The Prime Radiant Record</em> · the same walkthrough lives
+  in-repo at <span class="mono">docs/codebase-walkthrough.md</span>
+</footer>
+</main>
+
+</body>
+</html>
