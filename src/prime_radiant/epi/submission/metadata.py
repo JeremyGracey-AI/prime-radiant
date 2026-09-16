@@ -8,6 +8,12 @@ the stricter README prose), license from the schema enum, methods <=200 chars.
 designated_model=true makes the model eligible for CDC's ensemble (max two per
 team) — flip to false before the registration PR for a soft launch. The
 registration PR itself is a go-live action and is never opened by automation.
+
+2026-27 schema re-check (2026-09-16, fixture refreshed): required set unchanged
+(13 fields); the hub added two OPTIONAL properties we deliberately omit —
+baseline_model (we are not a hub baseline) and designated_targets (absent means
+designated for every target we submit; we submit only wk inc flu hosp, so the
+semantics are identical — revisit only if we ever submit a second target).
 """
 
 import tomllib

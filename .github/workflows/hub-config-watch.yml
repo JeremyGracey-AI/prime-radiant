@@ -25,7 +25,8 @@ jobs:
     env:
       # Bump after handling a firing (the issue body says so too); until then
       # the exact-title open-issue check keeps daily re-fires from duplicating.
-      LAST_KNOWN_MAX: "2026-05-30"
+      # 2026-09-16: bumped for the 2026-27 season (config landed ~Sep 14; issue #6).
+      LAST_KNOWN_MAX: "2027-05-29"
       ISSUE_TITLE: "FluSight hub: new season rounds enumerated (watcher)"
     steps:
       - name: Check hub tasks.json for rounds beyond the last known season
