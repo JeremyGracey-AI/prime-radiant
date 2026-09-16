@@ -30,7 +30,7 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.12.8 # note: no `v` prefix on this repo's tags
+    rev: 0.12.13 # note: no `v` prefix on this repo's tags
     hooks:
       - id: uv-lock
 
