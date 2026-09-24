@@ -212,7 +212,8 @@ class TestHubConfigWatch:
 
     def test_last_known_max_is_the_verified_season_end(self, watch: dict) -> None:
         env = watch["jobs"]["watch"]["env"]
-        assert env["LAST_KNOWN_MAX"] == "2027-05-29"  # max enumerated date, verified live 2026-09-16
+        # max enumerated date, verified live 2026-09-16
+        assert env["LAST_KNOWN_MAX"] == "2027-05-29"
 
     def test_issue_step_is_gated_and_idempotent(self, watch: dict) -> None:
         steps = watch["jobs"]["watch"]["steps"]
