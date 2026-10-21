@@ -72,7 +72,7 @@ dashboard = [
     # ==6.26.*: match the Space's README sdk_version exactly — FetchMerck commit
     # 8732e99 is the recorded cost of developing against a different Gradio than
     # the Space runs.
-    "gradio==6.26.*",
+    "gradio>=6.26,<6.29",
     # <7 cap: plotly 7 flips layout.geo.fitbounds default, removes
     # figure_factory.create_choropleth and *mapbox traces, and Gradio's bundled
     # plotly.js has no verified plotly-7 support. Declared directly per the
