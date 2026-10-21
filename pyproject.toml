@@ -77,7 +77,7 @@ dashboard = [
     # figure_factory.create_choropleth and *mapbox traces, and Gradio's bundled
     # plotly.js has no verified plotly-7 support. Declared directly per the
     # Phase F brief (transitive-only via forecasting-tools before this).
-    "plotly>=6.9,<7",
+    "plotly>=6.9,<8",
 ]
 
 [tool.hatch.build.targets.wheel]
